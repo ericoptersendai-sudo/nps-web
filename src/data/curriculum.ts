@@ -49,6 +49,8 @@ const subjects: Array<{ subject: Subject; icon: LucideIcon; color: string }> = [
   { subject: "English Language Arts", icon: BookOpen, color: "bg-violet-100 text-violet-700" }
 ];
 
+const QUESTIONS_PER_GRADE_SUBJECT = 1000;
+
 const grade3MathLessons: Lesson[] = [
   {
     unit: "3.N Numbers & Operations",
@@ -4951,6 +4953,177 @@ export function getCurriculum(grade: Grade): SubjectContent[] {
   }));
 }
 
+function rotateCorrectAnswer(answers: string[], correctIndex: number) {
+  const offset = correctIndex % answers.length;
+  const rotated = [...answers.slice(offset), ...answers.slice(0, offset)];
+  return {
+    answers: rotated,
+    correctIndex: (answers.length - offset) % answers.length
+  };
+}
+
+function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Question {
+  const variant = index % 8;
+  const base = grade * 11 + index;
+  const a = (base % 19) + grade + 3;
+  const b = (base % 13) + grade + 2;
+  const c = (base % 9) + 2;
+  const unit = lesson.unit.split(" ")[0];
+  let prompt = "";
+  let correct = "";
+  let distractors: string[] = [];
+  let explanation = "";
+
+  if (variant === 0) {
+    const answer = a * b + c;
+    prompt = `${unit}: Evaluate ${a} x ${b} + ${c}.`;
+    correct = `${answer}`;
+    distractors = [`${a * (b + c)}`, `${a + b * c}`, `${answer - c}`];
+    explanation = `Use order of operations: multiply ${a} x ${b}, then add ${c}. This supports ${lesson.title}.`;
+  } else if (variant === 1) {
+    const answer = a * c - b;
+    prompt = `${unit}: A student has ${a} groups of ${c} items and gives away ${b}. Which expression finds the number left?`;
+    correct = `${a} x ${c} - ${b}`;
+    distractors = [`${a} + ${c} - ${b}`, `${a} x (${c} - ${b})`, `${a} - ${c} x ${b}`];
+    explanation = `The situation starts with ${a} groups of ${c}, then subtracts ${b}. The value is ${answer}.`;
+  } else if (variant === 2) {
+    prompt = `${unit}: Which strategy best matches this standard: ${lesson.title}?`;
+    correct = lesson.solution[index % lesson.solution.length];
+    distractors = ["Ignore the given quantities and guess.", "Use only the largest number in the problem.", "Choose an operation before reading the full situation."];
+    explanation = `${correct} This matches the lesson because: ${lesson.explanation}`;
+  } else if (variant === 3) {
+    const numerator = (index % 7) + 1;
+    const denominator = numerator + (grade % 5) + 3;
+    prompt = `${unit}: Which fraction represents ${numerator} equal parts selected out of ${denominator} equal parts?`;
+    correct = `${numerator}/${denominator}`;
+    distractors = [`${denominator}/${numerator}`, `${numerator}/${denominator + numerator}`, `${denominator - numerator}/${denominator}`];
+    explanation = `The numerator counts selected parts and the denominator counts all equal parts. This practices ${lesson.title}.`;
+  } else if (variant === 4) {
+    const x = (index % 9) + 2;
+    const answer = a * x + b;
+    prompt = `${unit}: If x = ${x}, what is the value of ${a}x + ${b}?`;
+    correct = `${answer}`;
+    distractors = [`${a + x + b}`, `${a * (x + b)}`, `${answer + a}`];
+    explanation = `Substitute ${x} for x, then calculate ${a} x ${x} + ${b} = ${answer}.`;
+  } else if (variant === 5) {
+    const width = (index % 10) + grade;
+    const height = (index % 8) + 3;
+    const answer = width * height;
+    prompt = `${unit}: A rectangle is ${width} units by ${height} units. What is its area?`;
+    correct = `${answer} square units`;
+    distractors = [`${width + height} square units`, `${2 * (width + height)} square units`, `${answer + width} square units`];
+    explanation = `Area of a rectangle is length x width, so ${width} x ${height} = ${answer}.`;
+  } else if (variant === 6) {
+    const answer = a + b + c;
+    prompt = `${unit}: Which value completes the pattern ${a}, ${a + b}, ${a + b + c}, ___ if the increases are ${b}, then ${c}, then ${b + c}?`;
+    correct = `${answer + b + c}`;
+    distractors = [`${answer + b}`, `${answer + c}`, `${answer * 2}`];
+    explanation = `Follow the stated pattern of increases and add ${b + c} to ${answer}.`;
+  } else {
+    prompt = `${unit}: Which question would best test mastery of ${lesson.title}?`;
+    correct = lesson.miniQuiz;
+    distractors = ["What color is the worksheet?", "How fast can the student click?", "Which answer choice is shortest?"];
+    explanation = `A good proficiency question targets the standard directly: ${lesson.standard}`;
+  }
+
+  const rotated = rotateCorrectAnswer([correct, ...distractors], index);
+  return {
+    id: `g${grade}-math-generated-${String(index + 1).padStart(4, "0")}`,
+    grade,
+    subject: "Mathematics",
+    prompt,
+    answers: rotated.answers,
+    correctIndex: rotated.correctIndex,
+    explanation
+  };
+}
+
+function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Question {
+  const variant = index % 8;
+  const unit = lesson.unit.split(" ")[0];
+  let prompt = "";
+  let correct = "";
+  let distractors: string[] = [];
+  let explanation = "";
+
+  if (variant === 0) {
+    prompt = `${unit}: Which task best shows mastery of ${lesson.title}?`;
+    correct = lesson.miniQuiz;
+    distractors = ["Copy a sentence without explaining it.", "Choose the shortest answer without reading.", "Ignore the author's purpose and audience."];
+    explanation = `This task matches the standard because it asks students to use the skill, not just recognize a word. ${lesson.explanation}`;
+  } else if (variant === 1) {
+    prompt = `${unit}: A student is working on ${lesson.title}. Which revision or response is strongest?`;
+    correct = lesson.solution[index % lesson.solution.length];
+    distractors = ["Remove all evidence from the response.", "Use unrelated personal opinion only.", "Change the topic instead of answering the prompt."];
+    explanation = `${correct} This is connected to the lesson standard: ${lesson.standard}`;
+  } else if (variant === 2) {
+    prompt = `${unit}: Which choice best explains why evidence matters for ${lesson.title}?`;
+    correct = "Evidence supports claims and helps readers trust the reasoning.";
+    distractors = ["Evidence should be avoided in formal writing.", "Evidence is only decoration.", "Evidence replaces the need for a clear claim."];
+    explanation = `ELA proficiency questions should connect claims, evidence, reasoning, audience, and purpose.`;
+  } else if (variant === 3) {
+    prompt = `${unit}: Which answer best fits a grade ${grade} proficiency-level response about ${lesson.title}?`;
+    correct = "A focused answer that uses precise language and explains the reasoning.";
+    distractors = ["A one-word answer with no support.", "A copied phrase with no context.", "An answer about an unrelated subject."];
+    explanation = `Higher-quality ELA answers explain thinking clearly and stay tied to the standard.`;
+  } else if (variant === 4) {
+    prompt = `${unit}: Read this situation: ${lesson.example} What should the student do first?`;
+    correct = lesson.solution[0];
+    distractors = ["Skip the text and guess.", "Pick the answer with the most words.", "Ignore the audience and purpose."];
+    explanation = `The first step from the solution gives a strong way to begin the task.`;
+  } else if (variant === 5) {
+    prompt = `${unit}: Which choice is the best explanation of ${lesson.title}?`;
+    correct = lesson.explanation;
+    distractors = ["It means speed matters more than understanding.", "It means grammar, evidence, and purpose are unrelated.", "It means every text should be read the same way."];
+    explanation = `The correct explanation describes the actual skill students need to show.`;
+  } else if (variant === 6) {
+    prompt = `${unit}: Which response best uses audience and purpose for ${lesson.title}?`;
+    correct = "It chooses words, structure, and evidence that fit the audience and task.";
+    distractors = ["It uses the same tone for every assignment.", "It ignores who will read or hear it.", "It avoids organizing ideas."];
+    explanation = `Audience and purpose affect word choice, structure, evidence, and presentation choices.`;
+  } else {
+    prompt = `${unit}: Which question would best prepare a student for this standard?`;
+    correct = lesson.miniQuiz;
+    distractors = ["How many pages are in the app?", "Which button is blue?", "What is the easiest answer to click?"];
+    explanation = `A strong prep question should test the exact language skill in the standard: ${lesson.standard}`;
+  }
+
+  const rotated = rotateCorrectAnswer([correct, ...distractors], index);
+  return {
+    id: `g${grade}-ela-generated-${String(index + 1).padStart(4, "0")}`,
+    grade,
+    subject: "English Language Arts",
+    prompt,
+    answers: rotated.answers,
+    correctIndex: rotated.correctIndex,
+    explanation
+  };
+}
+
+function expandQuestionsFor(grade: Grade, subject: Subject, baseQuestions: Question[]) {
+  const gradeSubjectBase = baseQuestions.filter((question) => question.grade === grade && question.subject === subject);
+  const lessons = getCurriculum(grade).find((entry) => entry.subject === subject)?.lessons ?? [];
+  if (gradeSubjectBase.length >= QUESTIONS_PER_GRADE_SUBJECT || lessons.length === 0) {
+    return gradeSubjectBase.slice(0, QUESTIONS_PER_GRADE_SUBJECT);
+  }
+
+  const generated: Question[] = [];
+  for (let index = 0; gradeSubjectBase.length + generated.length < QUESTIONS_PER_GRADE_SUBJECT; index += 1) {
+    const lesson = lessons[index % lessons.length];
+    generated.push(subject === "Mathematics" ? generatedMathQuestion(grade, lesson, index) : generatedElaQuestion(grade, lesson, index));
+  }
+
+  return [...gradeSubjectBase, ...generated];
+}
+
+let expandedQuestionBankCache: Question[] | null = null;
+
 export function getQuestionBank(): Question[] {
-  return [...grade3MathQuestions, ...grade3ElaQuestions, ...grade4MathQuestions, ...grade4ElaQuestions, ...grade5MathQuestions, ...grade5ElaQuestions, ...grade6MathQuestions, ...grade6ElaQuestions, ...grade7MathQuestions, ...grade7ElaQuestions, ...grade8ElaQuestions, ...grade9ElaQuestions, ...grade10ElaQuestions, ...grade11ElaQuestions, ...grade12ElaQuestions, ...preAlgebraMathQuestions, ...algebra1MathQuestions, ...geometryMathQuestions, ...algebra2MathQuestions, ...precalculusMathQuestions];
+  if (expandedQuestionBankCache) {
+    return expandedQuestionBankCache;
+  }
+
+  const baseQuestions = [...grade3MathQuestions, ...grade3ElaQuestions, ...grade4MathQuestions, ...grade4ElaQuestions, ...grade5MathQuestions, ...grade5ElaQuestions, ...grade6MathQuestions, ...grade6ElaQuestions, ...grade7MathQuestions, ...grade7ElaQuestions, ...grade8ElaQuestions, ...grade9ElaQuestions, ...grade10ElaQuestions, ...grade11ElaQuestions, ...grade12ElaQuestions, ...preAlgebraMathQuestions, ...algebra1MathQuestions, ...geometryMathQuestions, ...algebra2MathQuestions, ...precalculusMathQuestions];
+  expandedQuestionBankCache = grades.flatMap((grade) => subjects.flatMap((entry) => expandQuestionsFor(grade, entry.subject, baseQuestions)));
+  return expandedQuestionBankCache;
 }
