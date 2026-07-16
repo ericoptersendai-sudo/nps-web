@@ -4962,6 +4962,18 @@ function rotateCorrectAnswer(answers: string[], correctIndex: number) {
   };
 }
 
+function buildAnswerChoices(correct: string, distractors: string[], index: number) {
+  const choices = [correct];
+  const fallbacks = ["Not enough information", "Cannot be determined", "None of these"];
+  for (const choice of [...distractors, ...fallbacks]) {
+    if (!choices.includes(choice)) {
+      choices.push(choice);
+    }
+    if (choices.length === 4) break;
+  }
+  return rotateCorrectAnswer(choices, index);
+}
+
 function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Question {
   const variant = index % 8;
   const base = grade * 11 + index;
@@ -4974,66 +4986,317 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
   let distractors: string[] = [];
   let explanation = "";
 
-  if (variant === 0) {
-    const answer = a * b + c;
-    prompt = `${unit}: Evaluate ${a} x ${b} + ${c}.`;
-    correct = `${answer}`;
-    distractors = [`${a * (b + c)}`, `${a + b * c}`, `${answer - c}`];
-    explanation = `Use order of operations: multiply ${a} x ${b}, then add ${c}. This supports ${lesson.title}.`;
-  } else if (variant === 1) {
-    const answer = a * c - b;
-    prompt = `${unit}: A student has ${a} groups of ${c} items and gives away ${b}. Which expression finds the number left?`;
-    correct = `${a} x ${c} - ${b}`;
-    distractors = [`${a} + ${c} - ${b}`, `${a} x (${c} - ${b})`, `${a} - ${c} x ${b}`];
-    explanation = `The situation starts with ${a} groups of ${c}, then subtracts ${b}. The value is ${answer}.`;
-  } else if (variant === 2) {
-    const total = a * b;
-    const divisor = (index % 5) + 2;
-    const quotient = Math.floor(total / divisor);
-    const remainder = total % divisor;
-    prompt = `${unit}: Divide ${total} by ${divisor}. What is the quotient and remainder?`;
-    correct = `${quotient} remainder ${remainder}`;
-    distractors = [`${quotient + 1} remainder ${remainder}`, `${quotient} remainder ${remainder + 1}`, `${divisor} remainder ${quotient}`];
-    explanation = `${divisor} x ${quotient} = ${divisor * quotient}, and ${total} - ${divisor * quotient} = ${remainder}.`;
-  } else if (variant === 3) {
-    const numerator = (index % 7) + 1;
-    const denominator = numerator + (grade % 5) + 3;
-    prompt = `${unit}: Which fraction represents ${numerator} equal parts selected out of ${denominator} equal parts?`;
-    correct = `${numerator}/${denominator}`;
-    distractors = [`${denominator}/${numerator}`, `${numerator}/${denominator + numerator}`, `${denominator - numerator}/${denominator}`];
-    explanation = `The numerator counts selected parts and the denominator counts all equal parts. This practices ${lesson.title}.`;
-  } else if (variant === 4) {
-    const x = (index % 9) + 2;
-    const answer = a * x + b;
-    prompt = `${unit}: If x = ${x}, what is the value of ${a}x + ${b}?`;
-    correct = `${answer}`;
-    distractors = [`${a + x + b}`, `${a * (x + b)}`, `${answer + a}`];
-    explanation = `Substitute ${x} for x, then calculate ${a} x ${x} + ${b} = ${answer}.`;
-  } else if (variant === 5) {
-    const width = (index % 10) + grade;
-    const height = (index % 8) + 3;
-    const answer = width * height;
-    prompt = `${unit}: A rectangle is ${width} units by ${height} units. What is its area?`;
-    correct = `${answer} square units`;
-    distractors = [`${width + height} square units`, `${2 * (width + height)} square units`, `${answer + width} square units`];
-    explanation = `Area of a rectangle is length x width, so ${width} x ${height} = ${answer}.`;
-  } else if (variant === 6) {
-    const answer = a + b + c;
-    prompt = `${unit}: Which value completes the pattern ${a}, ${a + b}, ${a + b + c}, ___ if the increases are ${b}, then ${c}, then ${b + c}?`;
-    correct = `${answer + b + c}`;
-    distractors = [`${answer + b}`, `${answer + c}`, `${answer * 2}`];
-    explanation = `Follow the stated pattern of increases and add ${b + c} to ${answer}.`;
+  if (grade <= 5) {
+    if (variant === 0) {
+      const thousands = (base % 9) + 1;
+      const hundreds = ((base + 3) % 9) + 1;
+      const tens = ((base + 5) % 9) + 1;
+      const ones = ((base + 7) % 9) + 1;
+      const number = 1000 * thousands + 100 * hundreds + 10 * tens + ones;
+      prompt = `${unit}: What is the value of the hundreds digit in ${number}?`;
+      correct = `${hundreds * 100}`;
+      distractors = [`${hundreds}`, `${hundreds * 10}`, `${thousands * 1000}`];
+      explanation = `The hundreds digit is ${hundreds}, so its value is ${hundreds * 100}.`;
+    } else if (variant === 1) {
+      const answer = a * c - b;
+      prompt = `${unit}: A class has ${a} bags with ${c} pencils in each bag. They give away ${b} pencils. How many pencils are left?`;
+      correct = `${answer}`;
+      distractors = [`${a + c - b}`, `${a * (c - b)}`, `${answer + b}`];
+      explanation = `Multiply first: ${a} x ${c} = ${a * c}. Then subtract ${b} to get ${answer}.`;
+    } else if (variant === 2) {
+      const numerator = (index % 5) + 1;
+      const denominator = numerator + 4;
+      prompt = `${unit}: Which fraction shows ${numerator} shaded parts out of ${denominator} equal parts?`;
+      correct = `${numerator}/${denominator}`;
+      distractors = [`${denominator}/${numerator}`, `${numerator}/${denominator + numerator}`, `${denominator - numerator}/${denominator}`];
+      explanation = `The numerator is the shaded parts and the denominator is the total equal parts.`;
+    } else if (variant === 3) {
+      const cents = 25 * ((index % 3) + 1) + 10 * ((index % 4) + 1) + 5;
+      prompt = `${unit}: A student has ${Math.floor(cents / 25)} quarters, ${(index % 4) + 1} dimes, and 1 nickel. What is the total value?`;
+      correct = `${cents} cents`;
+      distractors = [`${cents - 5} cents`, `${cents + 10} cents`, `${cents + 25} cents`];
+      explanation = `Add the coin values: quarters, dimes, and nickel total ${cents} cents.`;
+    } else if (variant === 4) {
+      const answer = a + b + c;
+      prompt = `${unit}: What number comes next in the pattern ${a}, ${a + b}, ${a + b + c}, ___ if the next increase is ${b + c}?`;
+      correct = `${answer + b + c}`;
+      distractors = [`${answer + b}`, `${answer + c}`, `${answer * 2}`];
+      explanation = `Add the next increase, ${b + c}, to ${answer}.`;
+    } else if (variant === 5) {
+      const width = (index % 8) + 3;
+      const height = (index % 6) + 2;
+      const answer = width * height;
+      prompt = `${unit}: A rectangle is ${width} units long and ${height} units wide. What is its area?`;
+      correct = `${answer} square units`;
+      distractors = [`${width + height} square units`, `${2 * (width + height)} square units`, `${answer + width} square units`];
+      explanation = `Area is length x width, so ${width} x ${height} = ${answer}.`;
+    } else if (variant === 6) {
+      const startHour = (index % 7) + 1;
+      const minutes = 15 + 5 * (index % 8);
+      prompt = `${unit}: A practice session starts at ${startHour}:00 and lasts ${minutes} minutes. What time does it end?`;
+      correct = `${startHour}:${String(minutes).padStart(2, "0")}`;
+      distractors = [`${startHour + 1}:00`, `${startHour}:${String(minutes + 5).padStart(2, "0")}`, `${startHour - 1 || 12}:${String(minutes).padStart(2, "0")}`];
+      explanation = `Add ${minutes} minutes to ${startHour}:00.`;
+    } else {
+      const values = [a, b, c, grade + (index % 6)];
+      const sorted = [...values].sort((left, right) => left - right);
+      const median = (sorted[1] + sorted[2]) / 2;
+      prompt = `${unit}: What is the median of ${values.join(", ")}?`;
+      correct = `${median}`;
+      distractors = [`${sorted[0]}`, `${sorted[3]}`, `${values.reduce((sum, value) => sum + value, 0)}`];
+      explanation = `Order the values as ${sorted.join(", ")} and average the two middle values.`;
+    }
+  } else if (grade <= 7) {
+    if (variant === 0) {
+      const answer = a - b - c;
+      prompt = `${unit}: Evaluate ${a} - ${b} - ${c}.`;
+      correct = `${answer}`;
+      distractors = [`${a - (b + c) + 1}`, `${a + b - c}`, `${b + c - a}`];
+      explanation = `Subtract from left to right: ${a} - ${b} - ${c} = ${answer}.`;
+    } else if (variant === 1) {
+      const total = a * 4;
+      const part = a;
+      prompt = `${unit}: A recipe uses ${part} cups of oats for ${total} cups of mix. What percent of the mix is oats?`;
+      correct = "25%";
+      distractors = ["20%", "40%", "75%"];
+      explanation = `${part}/${total} = 1/4, and 1/4 = 25%.`;
+    } else if (variant === 2) {
+      const x = (index % 8) + 3;
+      const total = b * x + c;
+      prompt = `${unit}: Solve ${b}x + ${c} = ${total}.`;
+      correct = `${x}`;
+      distractors = [`${x + 1}`, `${x - 1}`, `${total - c}`];
+      explanation = `Subtract ${c}, then divide by ${b}: x = ${x}.`;
+    } else if (variant === 3) {
+      const favorable = (index % 5) + 1;
+      const total = favorable + 5;
+      prompt = `${unit}: A bag has ${favorable} blue tiles and ${total - favorable} red tiles. What is the probability of choosing blue?`;
+      correct = `${favorable}/${total}`;
+      distractors = [`${total - favorable}/${total}`, `${favorable}/${total - favorable}`, `${total}/${favorable}`];
+      explanation = `Probability is favorable outcomes over total outcomes.`;
+    } else if (variant === 4) {
+      const baseLength = (index % 10) + 6;
+      const height = (index % 7) + 4;
+      const answer = (baseLength * height) / 2;
+      prompt = `${unit}: A triangle has base ${baseLength} and height ${height}. What is its area?`;
+      correct = `${answer} square units`;
+      distractors = [`${baseLength * height} square units`, `${baseLength + height} square units`, `${2 * (baseLength + height)} square units`];
+      explanation = `Triangle area is one-half base x height: (${baseLength} x ${height}) / 2 = ${answer}.`;
+    } else if (variant === 5) {
+      const rate = (index % 6) + 2;
+      prompt = `${unit}: If y = ${rate}x, what is y when x = ${c}?`;
+      correct = `${rate * c}`;
+      distractors = [`${rate + c}`, `${rate * c + rate}`, `${c - rate}`];
+      explanation = `Substitute x = ${c}: y = ${rate} x ${c} = ${rate * c}.`;
+    } else if (variant === 6) {
+      const answer = a ** 2;
+      prompt = `${unit}: Evaluate ${a}^2.`;
+      correct = `${answer}`;
+      distractors = [`${a * 2}`, `${answer + a}`, `${answer - a}`];
+      explanation = `${a}^2 means ${a} x ${a} = ${answer}.`;
+    } else {
+      const values = [a, b, c, grade + (index % 6)];
+      const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+      prompt = `${unit}: What is the mean of ${values.join(", ")}?`;
+      correct = `${mean}`;
+      distractors = [`${Math.max(...values)}`, `${Math.min(...values)}`, `${values.reduce((sum, value) => sum + value, 0)}`];
+      explanation = `Add the values and divide by ${values.length}.`;
+    }
+  } else if (grade === 8 || grade === 9) {
+    const slope = (index % 5) + 2;
+    const intercept = (index % 9) - 4;
+    if (variant === 0) {
+      const x = (index % 7) + 2;
+      const answer = slope * x + intercept;
+      prompt = `${unit}: For f(x) = ${slope}x ${intercept >= 0 ? "+" : "-"} ${Math.abs(intercept)}, find f(${x}).`;
+      correct = `${answer}`;
+      distractors = [`${answer + slope}`, `${answer - slope}`, `${answer + intercept + 1}`];
+      explanation = `Substitute ${x} for x and simplify.`;
+    } else if (variant === 1) {
+      const x = (index % 6) + 3;
+      const total = slope * x + intercept;
+      prompt = `${unit}: Solve ${slope}x ${intercept >= 0 ? "+" : "-"} ${Math.abs(intercept)} = ${total}.`;
+      correct = `${x}`;
+      distractors = [`${x + 1}`, `${x - 1}`, `${total}`];
+      explanation = `Undo the constant term, then divide by ${slope}.`;
+    } else if (variant === 2) {
+      const legA = 3 + (index % 4);
+      const legB = 4 + (index % 4);
+      const hypotenuseSquared = legA ** 2 + legB ** 2;
+      prompt = `${unit}: A right triangle has legs ${legA} and ${legB}. What is c^2 for the hypotenuse?`;
+      correct = `${hypotenuseSquared}`;
+      distractors = [`${legA + legB}`, `${legA ** 2 - legB}`, `${2 * hypotenuseSquared}`];
+      explanation = `Use a^2 + b^2 = c^2: ${legA ** 2} + ${legB ** 2} = ${hypotenuseSquared}.`;
+    } else if (variant === 3) {
+      prompt = `${unit}: Which equation has slope ${slope} and y-intercept ${intercept}?`;
+      correct = `y = ${slope}x ${intercept >= 0 ? "+" : "-"} ${Math.abs(intercept)}`;
+      distractors = [`y = ${intercept}x + ${slope}`, `y = ${slope + 1}x ${intercept >= 0 ? "+" : "-"} ${Math.abs(intercept)}`, `y = ${slope}x ${intercept >= 0 ? "-" : "+"} ${Math.abs(intercept)}`];
+      explanation = `Slope-intercept form is y = mx + b.`;
+    } else if (variant === 4) {
+      const answer = Math.abs(-a);
+      prompt = `${unit}: What is the absolute value of ${-a}?`;
+      correct = `${answer}`;
+      distractors = [`${-answer}`, `${answer + 1}`, `${answer - 1}`];
+      explanation = `Absolute value is distance from zero, so it is nonnegative.`;
+    } else if (variant === 5) {
+      const first = slope * a + intercept;
+      const second = slope * b + intercept;
+      prompt = `${unit}: The points (${a}, ${first}) and (${b}, ${second}) lie on a line. What is the slope?`;
+      correct = `${slope}`;
+      distractors = [`${intercept}`, `${slope + 1}`, `${first - second}`];
+      explanation = `Slope is change in y over change in x, which is ${slope}.`;
+    } else if (variant === 6) {
+      prompt = `${unit}: Which relation is linear?`;
+      correct = "A table where y increases by the same amount whenever x increases by 1.";
+      distractors = ["A graph shaped like a circle.", "A pattern where y doubles each step.", "A relation with no consistent rate of change."];
+      explanation = `Linear relationships have a constant rate of change.`;
+    } else {
+      const probability = ((index % 8) + 1) / 10;
+      prompt = `${unit}: An experiment has probability ${probability}. Which percent is equivalent?`;
+      correct = `${probability * 100}%`;
+      distractors = [`${probability}%`, `${probability * 10}%`, `${probability * 100 + 10}%`];
+      explanation = `Multiply the decimal probability by 100 to convert to a percent.`;
+    }
+  } else if (grade === 10) {
+    const angle = 30 + 5 * (index % 8);
+    if (variant === 0) {
+      prompt = `${unit}: Two angles form a linear pair. One angle is ${angle} degrees. What is the other angle?`;
+      correct = `${180 - angle} degrees`;
+      distractors = [`${angle} degrees`, `${90 - angle} degrees`, `${180 + angle} degrees`];
+      explanation = `A linear pair sums to 180 degrees.`;
+    } else if (variant === 1) {
+      const radius = (index % 9) + 3;
+      prompt = `${unit}: A circle has radius ${radius}. What is its area in terms of pi?`;
+      correct = `${radius ** 2}pi`;
+      distractors = [`${2 * radius}pi`, `${radius}pi`, `${2 * radius ** 2}pi`];
+      explanation = `Circle area is pi r^2.`;
+    } else if (variant === 2) {
+      const side = (index % 7) + 4;
+      prompt = `${unit}: A cube has side length ${side}. What is its volume?`;
+      correct = `${side ** 3} cubic units`;
+      distractors = [`${side ** 2} cubic units`, `${6 * side ** 2} cubic units`, `${3 * side} cubic units`];
+      explanation = `Cube volume is side^3.`;
+    } else if (variant === 3) {
+      prompt = `${unit}: If two parallel lines are cut by a transversal, what is true about alternate interior angles?`;
+      correct = "They are congruent.";
+      distractors = ["They always add to 90 degrees.", "They are always vertical angles.", "They are never equal."];
+      explanation = `Alternate interior angles formed by parallel lines are congruent.`;
+    } else if (variant === 4) {
+      const opposite = (index % 6) + 3;
+      const hyp = opposite * 2;
+      prompt = `${unit}: In a right triangle, opposite = ${opposite} and hypotenuse = ${hyp}. What is sin(theta)?`;
+      correct = `${opposite}/${hyp}`;
+      distractors = [`${hyp}/${opposite}`, `${opposite}/${opposite + hyp}`, `${hyp - opposite}/${hyp}`];
+      explanation = `Sine is opposite over hypotenuse.`;
+    } else if (variant === 5) {
+      prompt = `${unit}: Which statement is a valid first step in a two-column proof?`;
+      correct = "List the given information with its reason as Given.";
+      distractors = ["Assume the conclusion is true without reason.", "Skip all definitions.", "Use a diagram as the only justification."];
+      explanation = `Proofs begin from given information, definitions, postulates, or theorems.`;
+    } else if (variant === 6) {
+      const scale = (index % 4) + 2;
+      const side = (index % 5) + 5;
+      prompt = `${unit}: A dilation has scale factor ${scale}. A side length ${side} becomes what length?`;
+      correct = `${scale * side}`;
+      distractors = [`${scale + side}`, `${side - scale}`, `${side}`];
+      explanation = `Multiply the original length by the scale factor.`;
+    } else {
+      prompt = `${unit}: Which transformation preserves angle measure and side length?`;
+      correct = "rotation";
+      distractors = ["dilation with scale factor 3", "vertical stretch", "non-uniform scaling"];
+      explanation = `Rotations are rigid motions, so they preserve lengths and angle measures.`;
+    }
+  } else if (grade === 11) {
+    if (variant === 0) {
+      const answer = a ** 2 - b;
+      prompt = `${unit}: Evaluate x^2 - ${b} when x = ${a}.`;
+      correct = `${answer}`;
+      distractors = [`${2 * a - b}`, `${a ** 2 + b}`, `${answer + a}`];
+      explanation = `Substitute ${a}: ${a}^2 - ${b} = ${answer}.`;
+    } else if (variant === 1) {
+      prompt = `${unit}: What is the product of (x + ${c})(x + ${b})?`;
+      correct = `x^2 + ${b + c}x + ${b * c}`;
+      distractors = [`x^2 + ${b * c}x + ${b + c}`, `x^2 + ${b + c}`, `2x + ${b + c}`];
+      explanation = `Use FOIL: x^2 + ${b}x + ${c}x + ${b * c}.`;
+    } else if (variant === 2) {
+      const discriminant = b ** 2 - 4 * a * c;
+      prompt = `${unit}: For ${a}x^2 + ${b}x + ${c} = 0, what is the discriminant?`;
+      correct = `${discriminant}`;
+      distractors = [`${b ** 2 + 4 * a * c}`, `${4 * a * c}`, `${b - 4 * a * c}`];
+      explanation = `The discriminant is b^2 - 4ac.`;
+    } else if (variant === 3) {
+      prompt = `${unit}: What is the next term in the arithmetic sequence ${a}, ${a + b}, ${a + 2 * b}, ___?`;
+      correct = `${a + 3 * b}`;
+      distractors = [`${a + b ** 2}`, `${a + 2 * b + 1}`, `${a * b}`];
+      explanation = `The common difference is ${b}.`;
+    } else if (variant === 4) {
+      prompt = `${unit}: Simplify sqrt(${a ** 2}).`;
+      correct = `${a}`;
+      distractors = [`${a ** 2}`, `${2 * a}`, `sqrt(${a})`];
+      explanation = `The principal square root of ${a ** 2} is ${a}.`;
+    } else if (variant === 5) {
+      const first = a;
+      const ratio = 2;
+      prompt = `${unit}: What is the fourth term of the geometric sequence with first term ${first} and ratio ${ratio}?`;
+      correct = `${first * ratio ** 3}`;
+      distractors = [`${first + 3 * ratio}`, `${first * ratio ** 2}`, `${first ** 2 * ratio}`];
+      explanation = `The fourth term is a1 x r^3.`;
+    } else if (variant === 6) {
+      prompt = `${unit}: Which number is a complex number with nonzero imaginary part?`;
+      correct = `${a} + ${c}i`;
+      distractors = [`${a}`, `${-b}`, `${a + c}`];
+      explanation = `A non-real complex number includes an i term.`;
+    } else {
+      prompt = `${unit}: Add the matrices [[${a}, ${b}], [${c}, ${grade}]] and [[1, 2], [3, 4]]. What is the top-left entry?`;
+      correct = `${a + 1}`;
+      distractors = [`${a}`, `${a + 2}`, `${b + 1}`];
+      explanation = `Add corresponding entries, so the top-left entry is ${a} + 1.`;
+    }
   } else {
-    const values = [a, b, c, grade + (index % 6)];
-    const sorted = [...values].sort((left, right) => left - right);
-    const median = (sorted[1] + sorted[2]) / 2;
-    prompt = `${unit}: What is the median of ${values.join(", ")}?`;
-    correct = `${median}`;
-    distractors = [`${sorted[0]}`, `${sorted[3]}`, `${values.reduce((sum, value) => sum + value, 0)}`];
-    explanation = `Order the values as ${sorted.join(", ")}. With four values, the median is the average of the two middle values.`;
+    if (variant === 0) {
+      prompt = `${unit}: If f(x) = x^2 + ${b}x, what is f(${c})?`;
+      correct = `${c ** 2 + b * c}`;
+      distractors = [`${c + b * c}`, `${c ** 2 + b}`, `${2 * c + b}`];
+      explanation = `Substitute ${c} for x and simplify.`;
+    } else if (variant === 1) {
+      prompt = `${unit}: Which value of theta on the unit circle has sin(theta) = 0 and cos(theta) = -1?`;
+      correct = "pi";
+      distractors = ["0", "pi/2", "2pi"];
+      explanation = `At theta = pi, the unit-circle point is (-1, 0).`;
+    } else if (variant === 2) {
+      prompt = `${unit}: What is the center of (x - ${a})^2 + (y + ${c})^2 = ${b ** 2}?`;
+      correct = `(${a}, -${c})`;
+      distractors = [`(-${a}, ${c})`, `(${a}, ${c})`, `(${b}, -${c})`];
+      explanation = `A circle in standard form has center (h, k).`;
+    } else if (variant === 3) {
+      prompt = `${unit}: Which identity is true for all x?`;
+      correct = "sin^2(x) + cos^2(x) = 1";
+      distractors = ["sin(x) + cos(x) = 1", "tan(x) = sin(x) + cos(x)", "cos^2(x) - sin^2(x) = 1"];
+      explanation = `The Pythagorean identity is sin^2(x) + cos^2(x) = 1.`;
+    } else if (variant === 4) {
+      prompt = `${unit}: What is the amplitude of y = ${c}sin(x)?`;
+      correct = `${c}`;
+      distractors = [`${-c}`, `${2 * c}`, `${c + 1}`];
+      explanation = `Amplitude is the absolute value of the coefficient of sin(x).`;
+    } else if (variant === 5) {
+      prompt = `${unit}: Simplify i^${2 * ((index % 5) + 1)}.`;
+      correct = (index % 2 === 0) ? "-1" : "1";
+      distractors = ["i", "-i", "0"];
+      explanation = `Powers of i repeat in a cycle: i, -1, -i, 1.`;
+    } else if (variant === 6) {
+      prompt = `${unit}: If g(x) = ${a}x + ${b}, what is g^-1(x)?`;
+      correct = `(x - ${b})/${a}`;
+      distractors = [`${a}x - ${b}`, `(x + ${b})/${a}`, `${a}/(x - ${b})`];
+      explanation = `Swap x and y, then solve for y.`;
+    } else {
+      prompt = `${unit}: Which conic has one focus and one directrix?`;
+      correct = "parabola";
+      distractors = ["circle", "ellipse", "hyperbola"];
+      explanation = `A parabola is the set of points equidistant from a focus and a directrix.`;
+    }
   }
 
-  const rotated = rotateCorrectAnswer([correct, ...distractors], index);
+  const rotated = buildAnswerChoices(correct, distractors, index);
   return {
     id: `g${grade}-math-generated-${String(index + 1).padStart(4, "0")}`,
     grade,
@@ -5053,49 +5316,135 @@ function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Ques
   let distractors: string[] = [];
   let explanation = "";
 
-  if (variant === 0) {
-    prompt = `${unit}: Which sentence uses the most precise academic wording?`;
-    correct = "The narrator's limited perspective shapes how readers interpret the conflict.";
-    distractors = ["The story thing makes stuff happen.", "It is good because it is good.", "The text has words and a character."];
-    explanation = "Precise academic wording names the literary element and explains its effect.";
-  } else if (variant === 1) {
-    prompt = `${unit}: Which revision best combines the sentences? \"The claim is interesting. The claim needs stronger evidence.\"`;
-    correct = "The claim is interesting, but it needs stronger evidence.";
-    distractors = ["The claim is interesting the claim needs stronger evidence.", "Interesting stronger evidence claim.", "The claim, and evidence, interesting."];
-    explanation = "The correct revision joins the ideas clearly and shows contrast.";
-  } else if (variant === 2) {
-    prompt = `${unit}: In an argument, why does evidence matter?`;
-    correct = "Evidence supports claims and helps readers trust the reasoning.";
-    distractors = ["Evidence should be avoided in formal writing.", "Evidence is only decoration.", "Evidence replaces the need for a clear claim."];
-    explanation = "Strong arguments connect a clear claim to credible evidence and reasoning.";
-  } else if (variant === 3) {
-    prompt = `${unit}: Which response best explains an inference from a text?`;
-    correct = "A focused answer that uses precise language and explains the reasoning.";
-    distractors = ["A one-word answer with no support.", "A copied phrase with no context.", "An answer about an unrelated subject."];
-    explanation = "An inference needs textual support and a clear explanation of the reasoning.";
-  } else if (variant === 4) {
-    prompt = `${unit}: Which sentence correctly uses a transition to show cause and effect?`;
-    correct = "The source was outdated; therefore, the researcher found a newer study.";
-    distractors = ["The source was outdated; however, it was outdated.", "The source was outdated, blue, and library.", "The source was outdated because therefore newer."];
-    explanation = "Therefore signals a result or effect.";
-  } else if (variant === 5) {
-    prompt = `${unit}: Which word has the strongest negative connotation?`;
-    correct = "reckless";
-    distractors = ["bold", "confident", "adventurous"];
-    explanation = "Reckless suggests careless risk, while the other words can sound positive or neutral.";
-  } else if (variant === 6) {
-    prompt = `${unit}: Which choice best fits a formal research presentation?`;
-    correct = "It chooses words, structure, and evidence that fit the audience and task.";
-    distractors = ["It uses the same tone for every assignment.", "It ignores who will read or hear it.", "It avoids organizing ideas."];
-    explanation = "Formal presentations need appropriate tone, organization, and evidence for the audience.";
+  if (grade <= 5) {
+    if (variant === 0) {
+      prompt = `${unit}: Which sentence has the clearest subject and predicate?`;
+      correct = "The student solved the puzzle.";
+      distractors = ["Solved the puzzle.", "The student.", "Because the puzzle."];
+      explanation = "A complete sentence has both a subject and a predicate.";
+    } else if (variant === 1) {
+      prompt = `${unit}: Which word is a synonym for happy?`;
+      correct = "joyful";
+      distractors = ["angry", "silent", "heavy"];
+      explanation = "A synonym has a similar meaning.";
+    } else if (variant === 2) {
+      prompt = `${unit}: Which detail best supports the main idea that the garden needed care?`;
+      correct = "The plants were dry, and weeds covered the path.";
+      distractors = ["The garden had a red gate.", "The sky was blue.", "A bird flew over the fence."];
+      explanation = "Supporting details give evidence for the main idea.";
+    } else if (variant === 3) {
+      prompt = `${unit}: Which sentence uses correct capitalization?`;
+      correct = "Maya visited Oklahoma in June.";
+      distractors = ["maya visited Oklahoma in june.", "Maya visited oklahoma in June.", "maya visited oklahoma in june."];
+      explanation = "Names, places, and months should be capitalized.";
+    } else if (variant === 4) {
+      prompt = `${unit}: Which sentence gives an opinion?`;
+      correct = "The story was the most exciting one in the library.";
+      distractors = ["The book has 120 pages.", "The cover is blue.", "The author wrote three chapters."];
+      explanation = "An opinion tells what someone thinks or feels.";
+    } else if (variant === 5) {
+      prompt = `${unit}: Which word has the prefix re- meaning again?`;
+      correct = "reread";
+      distractors = ["reader", "ready", "real"];
+      explanation = "The prefix re- can mean again, as in reread.";
+    } else if (variant === 6) {
+      prompt = `${unit}: Which sentence correctly combines these ideas? \"The rain stopped. We went outside.\"`;
+      correct = "The rain stopped, so we went outside.";
+      distractors = ["The rain stopped we went outside.", "Stopped outside rain.", "Because the rain stopped outside."];
+      explanation = "The conjunction so shows the result.";
+    } else {
+      prompt = `${unit}: Which question would help a reader understand the speaker's message?`;
+      correct = "What is the speaker trying to explain?";
+      distractors = ["What color are the chairs?", "How many letters are in the title?", "Which answer is shortest?"];
+      explanation = "A clarifying question should focus on the speaker's meaning.";
+    }
+  } else if (grade <= 8) {
+    if (variant === 0) {
+      prompt = `${unit}: Which sentence uses the most precise wording?`;
+      correct = "The narrator's fear increases as the footsteps move closer.";
+      distractors = ["The story gets kind of scary.", "The thing is weird.", "It happens in a place."];
+      explanation = "Precise wording names the feeling and the evidence.";
+    } else if (variant === 1) {
+      prompt = `${unit}: Which revision best combines the sentences? \"The claim is interesting. The claim needs stronger evidence.\"`;
+      correct = "The claim is interesting, but it needs stronger evidence.";
+      distractors = ["The claim is interesting the claim needs stronger evidence.", "Interesting stronger evidence claim.", "The claim, and evidence, interesting."];
+      explanation = "The correct revision joins the ideas clearly and shows contrast.";
+    } else if (variant === 2) {
+      prompt = `${unit}: Which sentence states a claim for an argument?`;
+      correct = "Schools should offer more tutoring because it helps students practice difficult skills.";
+      distractors = ["Tutoring exists in some schools.", "This paragraph is about tutoring.", "Many students have backpacks."];
+      explanation = "A claim takes a position that can be supported with reasons and evidence.";
+    } else if (variant === 3) {
+      prompt = `${unit}: Which response best explains an inference from a text?`;
+      correct = "The character is nervous because she checks the clock three times and speaks softly.";
+      distractors = ["She is nervous.", "The clock exists.", "I like this character."];
+      explanation = "An inference should use text evidence and explain the reasoning.";
+    } else if (variant === 4) {
+      prompt = `${unit}: Which transition shows cause and effect?`;
+      correct = "therefore";
+      distractors = ["however", "meanwhile", "similarly"];
+      explanation = "Therefore signals a result.";
+    } else if (variant === 5) {
+      prompt = `${unit}: Which word has the strongest negative connotation?`;
+      correct = "reckless";
+      distractors = ["bold", "confident", "adventurous"];
+      explanation = "Reckless suggests careless risk.";
+    } else if (variant === 6) {
+      prompt = `${unit}: Which sentence uses a colon correctly?`;
+      correct = "Bring three supplies: paper, pencils, and a folder.";
+      distractors = ["Bring: three supplies paper, pencils, and a folder.", "Bring three: supplies paper pencils.", "Bring three supplies paper: pencils folder."];
+      explanation = "A colon can introduce a list after a complete idea.";
+    } else {
+      prompt = `${unit}: Which sentence correctly uses a semicolon?`;
+      correct = "The evidence was clear; the conclusion was reasonable.";
+      distractors = ["The evidence; was clear and reasonable.", "The evidence was clear; because the conclusion was reasonable.", "The; evidence was clear the conclusion."];
+      explanation = "A semicolon can join two closely related independent clauses.";
+    }
   } else {
-    prompt = `${unit}: Which sentence correctly uses a semicolon?`;
-    correct = "The evidence was clear; the conclusion was reasonable.";
-    distractors = ["The evidence; was clear and reasonable.", "The evidence was clear; because the conclusion was reasonable.", "The; evidence was clear the conclusion."];
-    explanation = "A semicolon can join two closely related independent clauses.";
+    if (variant === 0) {
+      prompt = `${unit}: Which sentence uses the most precise academic wording?`;
+      correct = "The narrator's limited perspective shapes how readers interpret the conflict.";
+      distractors = ["The story thing makes stuff happen.", "It is good because it is good.", "The text has words and a character."];
+      explanation = "Precise academic wording names the literary element and explains its effect.";
+    } else if (variant === 1) {
+      prompt = `${unit}: Which revision best combines the sentences? \"The claim is interesting. The claim needs stronger evidence.\"`;
+      correct = "The claim is interesting, but it needs stronger evidence.";
+      distractors = ["The claim is interesting the claim needs stronger evidence.", "Interesting stronger evidence claim.", "The claim, and evidence, interesting."];
+      explanation = "The correct revision joins the ideas clearly and shows contrast.";
+    } else if (variant === 2) {
+      prompt = `${unit}: In an argument, why does evidence matter?`;
+      correct = "Evidence supports claims and helps readers trust the reasoning.";
+      distractors = ["Evidence should be avoided in formal writing.", "Evidence is only decoration.", "Evidence replaces the need for a clear claim."];
+      explanation = "Strong arguments connect a clear claim to credible evidence and reasoning.";
+    } else if (variant === 3) {
+      prompt = `${unit}: Which response best explains an inference from a text?`;
+      correct = "A focused answer that uses precise language and explains the reasoning.";
+      distractors = ["A one-word answer with no support.", "A copied phrase with no context.", "An answer about an unrelated subject."];
+      explanation = "An inference needs textual support and a clear explanation of the reasoning.";
+    } else if (variant === 4) {
+      prompt = `${unit}: Which sentence correctly uses a transition to show cause and effect?`;
+      correct = "The source was outdated; therefore, the researcher found a newer study.";
+      distractors = ["The source was outdated; however, it was outdated.", "The source was outdated, blue, and library.", "The source was outdated because therefore newer."];
+      explanation = "Therefore signals a result or effect.";
+    } else if (variant === 5) {
+      prompt = `${unit}: Which word has the strongest negative connotation?`;
+      correct = "reckless";
+      distractors = ["bold", "confident", "adventurous"];
+      explanation = "Reckless suggests careless risk, while the other words can sound positive or neutral.";
+    } else if (variant === 6) {
+      prompt = `${unit}: Which choice best fits a formal research presentation?`;
+      correct = "It chooses words, structure, and evidence that fit the audience and task.";
+      distractors = ["It uses the same tone for every assignment.", "It ignores who will read or hear it.", "It avoids organizing ideas."];
+      explanation = "Formal presentations need appropriate tone, organization, and evidence for the audience.";
+    } else {
+      prompt = `${unit}: Which sentence correctly uses a semicolon?`;
+      correct = "The evidence was clear; the conclusion was reasonable.";
+      distractors = ["The evidence; was clear and reasonable.", "The evidence was clear; because the conclusion was reasonable.", "The; evidence was clear the conclusion."];
+      explanation = "A semicolon can join two closely related independent clauses.";
+    }
   }
 
-  const rotated = rotateCorrectAnswer([correct, ...distractors], index);
+  const rotated = buildAnswerChoices(correct, distractors, index);
   return {
     id: `g${grade}-ela-generated-${String(index + 1).padStart(4, "0")}`,
     grade,
