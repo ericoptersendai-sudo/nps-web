@@ -27,6 +27,7 @@ export type Question = {
   id: string;
   grade: Grade;
   subject: Subject;
+  questionType?: string;
   prompt: string;
   answers: string[];
   correctIndex: number;
@@ -5022,9 +5023,9 @@ function testMathPrompt(prompt: string) {
     .replace("Which conic", "Select the conic");
 }
 
-function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind): Question {
+function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
   const bankOffset = bankKind === "test" ? 10000 : 0;
-  const variant = (index + (bankKind === "test" ? 3 : 0)) % 8;
+  const variant = (patternIndex + (bankKind === "test" ? 3 : 0)) % 8;
   const base = grade * 11 + index + bankOffset;
   const a = (base % 19) + grade + 3;
   const b = (base % 13) + grade + 2;
@@ -5356,6 +5357,7 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
     id: `g${grade}-math-${bankKind}-${String(index + 1).padStart(4, "0")}`,
     grade,
     subject: "Mathematics",
+    questionType: `${lesson.title} | pattern ${variant + 1}`,
     prompt,
     answers: rotated.answers,
     correctIndex: rotated.correctIndex,
@@ -5363,8 +5365,8 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
   };
 }
 
-function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind): Question {
-  const variant = (index + (bankKind === "test" ? 4 : 0)) % 8;
+function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
+  const variant = (patternIndex + (bankKind === "test" ? 4 : 0)) % 8;
   const unit = lesson.unit.split(" ")[0];
   let prompt = "";
   let correct = "";
@@ -5524,6 +5526,7 @@ function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankK
     id: `g${grade}-ela-${bankKind}-${String(index + 1).padStart(4, "0")}`,
     grade,
     subject: "English Language Arts",
+    questionType: `${lesson.title} | pattern ${variant + 1}`,
     prompt,
     answers: rotated.answers,
     correctIndex: rotated.correctIndex,
@@ -5540,7 +5543,8 @@ function expandQuestionsFor(grade: Grade, subject: Subject, bankKind: QuestionBa
   const generated: Question[] = [];
   for (let index = 0; generated.length < QUESTIONS_PER_GRADE_SUBJECT; index += 1) {
     const lesson = lessons[index % lessons.length];
-    generated.push(subject === "Mathematics" ? generatedMathQuestion(grade, lesson, index, bankKind) : generatedElaQuestion(grade, lesson, index, bankKind));
+    const patternIndex = Math.floor(index / lessons.length);
+    generated.push(subject === "Mathematics" ? generatedMathQuestion(grade, lesson, index, bankKind, patternIndex) : generatedElaQuestion(grade, lesson, index, bankKind, patternIndex));
   }
 
   return generated;

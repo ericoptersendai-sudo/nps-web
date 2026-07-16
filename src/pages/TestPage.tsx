@@ -9,8 +9,44 @@ import { Panel } from "../components/Panel";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
+import type { Question } from "../data/curriculum";
 
 const TEST_LENGTH = 15;
+
+function getQuestionType(question: Question) {
+  return question.questionType ?? question.prompt.split(":")[0] ?? question.id;
+}
+
+function buildRandomTest(questionBank: Question[], usedQuestionIds: string[]) {
+  const used = new Set(usedQuestionIds);
+  const available = shuffle(questionBank.filter((question) => !used.has(question.id)));
+  const typeGroups = new Map<string, Question[]>();
+
+  available.forEach((question) => {
+    const type = getQuestionType(question);
+    typeGroups.set(type, [...(typeGroups.get(type) ?? []), question]);
+  });
+
+  const selected: Question[] = [];
+  const selectedIds = new Set<string>();
+
+  shuffle([...typeGroups.values()]).forEach((group) => {
+    if (selected.length >= TEST_LENGTH) return;
+    const choice = shuffle(group)[0];
+    selected.push(choice);
+    selectedIds.add(choice.id);
+  });
+
+  if (selected.length < TEST_LENGTH) {
+    available.forEach((question) => {
+      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id)) return;
+      selected.push(question);
+      selectedIds.add(question.id);
+    });
+  }
+
+  return shuffle(selected);
+}
 
 export function TestPage() {
   const { grade } = useGrade();
@@ -25,7 +61,7 @@ export function TestPage() {
     [grade, selectedSubject]
   );
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
-  const [questions, setQuestions] = useState(() => shuffle(questionBank).slice(0, Math.min(TEST_LENGTH, questionBank.length)));
+  const [questions, setQuestions] = useState(() => buildRandomTest(questionBank, []));
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -38,7 +74,7 @@ export function TestPage() {
 
   useEffect(() => {
     setUsedQuestionIds([]);
-    setQuestions(shuffle(questionBank).slice(0, Math.min(TEST_LENGTH, questionBank.length)));
+    setQuestions(buildRandomTest(questionBank, []));
     setCurrent(0);
     setAnswers({});
     setSubmitted(false);
@@ -60,9 +96,8 @@ export function TestPage() {
 
   function startNewTest() {
     const usedNow = [...new Set([...usedQuestionIds, ...questions.map((question) => question.id)])];
-    const available = questionBank.filter((question) => !usedNow.includes(question.id));
     setUsedQuestionIds(usedNow);
-    setQuestions(shuffle(available).slice(0, Math.min(TEST_LENGTH, available.length)));
+    setQuestions(buildRandomTest(questionBank, usedNow));
     setCurrent(0);
     setAnswers({});
     setSubmitted(false);
