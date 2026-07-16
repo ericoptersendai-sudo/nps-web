@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Lightbulb, PlayCircle, XCircle } from "lucide-react";
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
-import { getCurriculum, getGradeLabel, getQuestionBank } from "../data/curriculum";
+import { getCurriculum, getGradeLabel, getStudyQuestionBank } from "../data/curriculum";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useSettings } from "../context/SettingsContext";
@@ -25,7 +25,7 @@ export function PrepPage() {
   const [checkedAnswer, setCheckedAnswer] = useState(false);
   const active = curriculum.find((item) => item.subject === activeSubject) ?? curriculum[0];
   const practiceQuestions = useMemo(
-    () => getQuestionBank().filter((question) => question.grade === grade && question.subject === activeSubject),
+    () => getStudyQuestionBank().filter((question) => question.grade === grade && question.subject === activeSubject),
     [grade, activeSubject]
   );
   const [practiceQueue, setPracticeQueue] = useState(() => shuffle(practiceQuestions));

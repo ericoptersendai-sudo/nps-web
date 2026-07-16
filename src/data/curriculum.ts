@@ -50,6 +50,7 @@ const subjects: Array<{ subject: Subject; icon: LucideIcon; color: string }> = [
 ];
 
 const QUESTIONS_PER_GRADE_SUBJECT = 1000;
+type QuestionBankKind = "study" | "test";
 
 const grade3MathLessons: Lesson[] = [
   {
@@ -4974,9 +4975,57 @@ function buildAnswerChoices(correct: string, distractors: string[], index: numbe
   return rotateCorrectAnswer(choices, index);
 }
 
-function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Question {
-  const variant = index % 8;
-  const base = grade * 11 + index;
+function countNoun(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function testMathPrompt(prompt: string) {
+  return prompt
+    .replace("What is the value of", "Find the value of")
+    .replace("A class has", "On a test, a class has")
+    .replace("Which fraction shows", "Select the fraction that shows")
+    .replace("A student has", "Calculate the value when a student has")
+    .replace("What number comes next", "Find the next number")
+    .replace("A rectangle is", "Find the area when a rectangle is")
+    .replace("A practice session starts", "Find the ending time when a practice session starts")
+    .replace("What is the median", "Find the median")
+    .replace("What is the absolute value", "Find the absolute value")
+    .replace("Evaluate", "Simplify")
+    .replace("A recipe uses", "Calculate the percent when a recipe uses")
+    .replace("Solve", "Find x:")
+    .replace("A bag has", "Find the probability when a bag has")
+    .replace("A triangle has", "Find the area when a triangle has")
+    .replace("If y =", "Calculate y if y =")
+    .replace("For f(x)", "Evaluate the function: f(x)")
+    .replace("Which equation", "Select the equation")
+    .replace("The points", "Find the slope if the points")
+    .replace("Which relation", "Select the relation")
+    .replace("An experiment has", "Convert the probability:")
+    .replace("Two angles form", "Find the missing angle:")
+    .replace("A circle has", "Find the circle area:")
+    .replace("A cube has", "Find the cube volume:")
+    .replace("If two parallel lines", "Use parallel-line facts:")
+    .replace("In a right triangle", "Use right-triangle trig:")
+    .replace("Which statement", "Select the statement")
+    .replace("A dilation has", "Apply the dilation:")
+    .replace("Which transformation", "Select the transformation")
+    .replace("What is the product", "Expand")
+    .replace("What is the next term", "Find the next term")
+    .replace("Simplify sqrt", "Simplify the radical sqrt")
+    .replace("What is the fourth term", "Find the fourth term")
+    .replace("Which number", "Select the number")
+    .replace("Add the matrices", "For the matrix sum, add")
+    .replace("Which value", "Select the value")
+    .replace("What is the center", "Find the center")
+    .replace("Which identity", "Select the identity")
+    .replace("What is the amplitude", "Find the amplitude")
+    .replace("Which conic", "Select the conic");
+}
+
+function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind): Question {
+  const bankOffset = bankKind === "test" ? 10000 : 0;
+  const variant = (index + (bankKind === "test" ? 3 : 0)) % 8;
+  const base = grade * 11 + index + bankOffset;
   const a = (base % 19) + grade + 3;
   const b = (base % 13) + grade + 2;
   const c = (base % 9) + 2;
@@ -5012,7 +5061,9 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
       explanation = `The numerator is the shaded parts and the denominator is the total equal parts.`;
     } else if (variant === 3) {
       const cents = 25 * ((index % 3) + 1) + 10 * ((index % 4) + 1) + 5;
-      prompt = `${unit}: A student has ${Math.floor(cents / 25)} quarters, ${(index % 4) + 1} dimes, and 1 nickel. What is the total value?`;
+      const quarters = Math.floor(cents / 25);
+      const dimes = (index % 4) + 1;
+      prompt = `${unit}: A student has ${countNoun(quarters, "quarter")}, ${countNoun(dimes, "dime")}, and 1 nickel. What is the total value?`;
       correct = `${cents} cents`;
       distractors = [`${cents - 5} cents`, `${cents + 10} cents`, `${cents + 25} cents`];
       explanation = `Add the coin values: quarters, dimes, and nickel total ${cents} cents.`;
@@ -5296,9 +5347,13 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
     }
   }
 
+  if (bankKind === "test") {
+    prompt = testMathPrompt(prompt);
+  }
+
   const rotated = buildAnswerChoices(correct, distractors, index);
   return {
-    id: `g${grade}-math-generated-${String(index + 1).padStart(4, "0")}`,
+    id: `g${grade}-math-${bankKind}-${String(index + 1).padStart(4, "0")}`,
     grade,
     subject: "Mathematics",
     prompt,
@@ -5308,8 +5363,8 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
   };
 }
 
-function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Question {
-  const variant = index % 8;
+function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind): Question {
+  const variant = (index + (bankKind === "test" ? 4 : 0)) % 8;
   const unit = lesson.unit.split(" ")[0];
   let prompt = "";
   let correct = "";
@@ -5444,9 +5499,29 @@ function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Ques
     }
   }
 
-  const rotated = buildAnswerChoices(correct, distractors, index);
+  if (bankKind === "test") {
+    prompt = prompt
+      .replace("Which word has", "Choose the word with")
+      .replace("Which sentence states", "Choose the sentence that states")
+      .replace("Which transition shows", "Choose the transition that shows")
+      .replace("Which response best explains", "Choose the response that best explains")
+      .replace("Which sentence correctly uses", "Choose the sentence that correctly uses")
+      .replace("Which sentence has", "Choose the sentence with")
+      .replace("Which word is", "Choose the word that is")
+      .replace("Which detail", "Choose the detail that")
+      .replace("Which sentence uses", "Choose the sentence that uses")
+      .replace("Which sentence gives", "Choose the sentence that gives")
+      .replace("Which question", "Choose the question that")
+      .replace("Which revision", "Choose the revision that")
+      .replace("Which response", "Choose the response that")
+      .replace("Which transition", "Choose the transition that")
+      .replace("Which choice", "Choose the choice that")
+      .replace("In an argument, why", "For an argument, why");
+  }
+
+  const rotated = buildAnswerChoices(correct, distractors, index + (bankKind === "test" ? 1 : 0));
   return {
-    id: `g${grade}-ela-generated-${String(index + 1).padStart(4, "0")}`,
+    id: `g${grade}-ela-${bankKind}-${String(index + 1).padStart(4, "0")}`,
     grade,
     subject: "English Language Arts",
     prompt,
@@ -5456,30 +5531,49 @@ function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Ques
   };
 }
 
-function expandQuestionsFor(grade: Grade, subject: Subject, baseQuestions: Question[]) {
-  const gradeSubjectBase = baseQuestions.filter((question) => question.grade === grade && question.subject === subject);
+function expandQuestionsFor(grade: Grade, subject: Subject, bankKind: QuestionBankKind) {
   const lessons = getCurriculum(grade).find((entry) => entry.subject === subject)?.lessons ?? [];
-  if (gradeSubjectBase.length >= QUESTIONS_PER_GRADE_SUBJECT || lessons.length === 0) {
-    return gradeSubjectBase.slice(0, QUESTIONS_PER_GRADE_SUBJECT);
+  if (lessons.length === 0) {
+    return [];
   }
 
   const generated: Question[] = [];
-  for (let index = 0; gradeSubjectBase.length + generated.length < QUESTIONS_PER_GRADE_SUBJECT; index += 1) {
+  for (let index = 0; generated.length < QUESTIONS_PER_GRADE_SUBJECT; index += 1) {
     const lesson = lessons[index % lessons.length];
-    generated.push(subject === "Mathematics" ? generatedMathQuestion(grade, lesson, index) : generatedElaQuestion(grade, lesson, index));
+    generated.push(subject === "Mathematics" ? generatedMathQuestion(grade, lesson, index, bankKind) : generatedElaQuestion(grade, lesson, index, bankKind));
   }
 
-  return [...gradeSubjectBase, ...generated];
+  return generated;
 }
 
-let expandedQuestionBankCache: Question[] | null = null;
+let studyQuestionBankCache: Question[] | null = null;
+let testQuestionBankCache: Question[] | null = null;
 
-export function getQuestionBank(): Question[] {
-  if (expandedQuestionBankCache) {
-    return expandedQuestionBankCache;
+function getExpandedQuestionBank(bankKind: QuestionBankKind): Question[] {
+  if (bankKind === "study" && studyQuestionBankCache) {
+    return studyQuestionBankCache;
+  }
+  if (bankKind === "test" && testQuestionBankCache) {
+    return testQuestionBankCache;
   }
 
-  const baseQuestions = [...grade3MathQuestions, ...grade3ElaQuestions, ...grade4MathQuestions, ...grade4ElaQuestions, ...grade5MathQuestions, ...grade5ElaQuestions, ...grade6MathQuestions, ...grade6ElaQuestions, ...grade7MathQuestions, ...grade7ElaQuestions, ...grade8ElaQuestions, ...grade9ElaQuestions, ...grade10ElaQuestions, ...grade11ElaQuestions, ...grade12ElaQuestions, ...preAlgebraMathQuestions, ...algebra1MathQuestions, ...geometryMathQuestions, ...algebra2MathQuestions, ...precalculusMathQuestions];
-  expandedQuestionBankCache = grades.flatMap((grade) => subjects.flatMap((entry) => expandQuestionsFor(grade, entry.subject, baseQuestions)));
-  return expandedQuestionBankCache;
+  const bank = grades.flatMap((grade) => subjects.flatMap((entry) => expandQuestionsFor(grade, entry.subject, bankKind)));
+  if (bankKind === "study") {
+    studyQuestionBankCache = bank;
+  } else {
+    testQuestionBankCache = bank;
+  }
+  return bank;
+}
+
+export function getStudyQuestionBank(): Question[] {
+  return getExpandedQuestionBank("study");
+}
+
+export function getTestQuestionBank(): Question[] {
+  return getExpandedQuestionBank("test");
+}
+
+export function getQuestionBank(): Question[] {
+  return getTestQuestionBank();
 }

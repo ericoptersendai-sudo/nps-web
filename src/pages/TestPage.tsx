@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
-import { getCurriculum, getGradeLabel, getQuestionBank } from "../data/curriculum";
+import { getCurriculum, getGradeLabel, getTestQuestionBank } from "../data/curriculum";
 import type { Subject } from "../data/curriculum";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
@@ -21,7 +21,7 @@ export function TestPage() {
   const subjects = useMemo(() => getCurriculum(grade), [grade]);
   const [selectedSubject, setSelectedSubject] = useState<Subject>(subjects[0].subject);
   const questionBank = useMemo(
-    () => getQuestionBank().filter((question) => question.grade === grade && question.subject === selectedSubject),
+    () => getTestQuestionBank().filter((question) => question.grade === grade && question.subject === selectedSubject),
     [grade, selectedSubject]
   );
   const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
