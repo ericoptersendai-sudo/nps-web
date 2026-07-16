@@ -14,6 +14,13 @@ import type { Question } from "../data/curriculum";
 const TEST_LENGTH = 15;
 
 function getQuestionType(question: Question) {
+  const text = `${question.questionType ?? ""} ${question.prompt} ${question.explanation}`.toLowerCase();
+
+  if (text.includes("absolute value")) return "absolute value";
+  if (text.includes("slope") || text.includes("y-intercept") || text.includes("rate of change") || text.includes("line of best fit")) {
+    return "linear rate and slope";
+  }
+
   return question.questionType ?? question.prompt.split(":")[0] ?? question.id;
 }
 
