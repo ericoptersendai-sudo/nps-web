@@ -4987,10 +4987,14 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
     distractors = [`${a} + ${c} - ${b}`, `${a} x (${c} - ${b})`, `${a} - ${c} x ${b}`];
     explanation = `The situation starts with ${a} groups of ${c}, then subtracts ${b}. The value is ${answer}.`;
   } else if (variant === 2) {
-    prompt = `${unit}: Which strategy best matches this standard: ${lesson.title}?`;
-    correct = lesson.solution[index % lesson.solution.length];
-    distractors = ["Ignore the given quantities and guess.", "Use only the largest number in the problem.", "Choose an operation before reading the full situation."];
-    explanation = `${correct} This matches the lesson because: ${lesson.explanation}`;
+    const total = a * b;
+    const divisor = (index % 5) + 2;
+    const quotient = Math.floor(total / divisor);
+    const remainder = total % divisor;
+    prompt = `${unit}: Divide ${total} by ${divisor}. What is the quotient and remainder?`;
+    correct = `${quotient} remainder ${remainder}`;
+    distractors = [`${quotient + 1} remainder ${remainder}`, `${quotient} remainder ${remainder + 1}`, `${divisor} remainder ${quotient}`];
+    explanation = `${divisor} x ${quotient} = ${divisor * quotient}, and ${total} - ${divisor * quotient} = ${remainder}.`;
   } else if (variant === 3) {
     const numerator = (index % 7) + 1;
     const denominator = numerator + (grade % 5) + 3;
@@ -5020,10 +5024,13 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number): Que
     distractors = [`${answer + b}`, `${answer + c}`, `${answer * 2}`];
     explanation = `Follow the stated pattern of increases and add ${b + c} to ${answer}.`;
   } else {
-    prompt = `${unit}: Which question would best test mastery of ${lesson.title}?`;
-    correct = lesson.miniQuiz;
-    distractors = ["What color is the worksheet?", "How fast can the student click?", "Which answer choice is shortest?"];
-    explanation = `A good proficiency question targets the standard directly: ${lesson.standard}`;
+    const values = [a, b, c, grade + (index % 6)];
+    const sorted = [...values].sort((left, right) => left - right);
+    const median = (sorted[1] + sorted[2]) / 2;
+    prompt = `${unit}: What is the median of ${values.join(", ")}?`;
+    correct = `${median}`;
+    distractors = [`${sorted[0]}`, `${sorted[3]}`, `${values.reduce((sum, value) => sum + value, 0)}`];
+    explanation = `Order the values as ${sorted.join(", ")}. With four values, the median is the average of the two middle values.`;
   }
 
   const rotated = rotateCorrectAnswer([correct, ...distractors], index);
@@ -5047,45 +5054,45 @@ function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number): Ques
   let explanation = "";
 
   if (variant === 0) {
-    prompt = `${unit}: Which task best shows mastery of ${lesson.title}?`;
-    correct = lesson.miniQuiz;
-    distractors = ["Copy a sentence without explaining it.", "Choose the shortest answer without reading.", "Ignore the author's purpose and audience."];
-    explanation = `This task matches the standard because it asks students to use the skill, not just recognize a word. ${lesson.explanation}`;
+    prompt = `${unit}: Which sentence uses the most precise academic wording?`;
+    correct = "The narrator's limited perspective shapes how readers interpret the conflict.";
+    distractors = ["The story thing makes stuff happen.", "It is good because it is good.", "The text has words and a character."];
+    explanation = "Precise academic wording names the literary element and explains its effect.";
   } else if (variant === 1) {
-    prompt = `${unit}: A student is working on ${lesson.title}. Which revision or response is strongest?`;
-    correct = lesson.solution[index % lesson.solution.length];
-    distractors = ["Remove all evidence from the response.", "Use unrelated personal opinion only.", "Change the topic instead of answering the prompt."];
-    explanation = `${correct} This is connected to the lesson standard: ${lesson.standard}`;
+    prompt = `${unit}: Which revision best combines the sentences? \"The claim is interesting. The claim needs stronger evidence.\"`;
+    correct = "The claim is interesting, but it needs stronger evidence.";
+    distractors = ["The claim is interesting the claim needs stronger evidence.", "Interesting stronger evidence claim.", "The claim, and evidence, interesting."];
+    explanation = "The correct revision joins the ideas clearly and shows contrast.";
   } else if (variant === 2) {
-    prompt = `${unit}: Which choice best explains why evidence matters for ${lesson.title}?`;
+    prompt = `${unit}: In an argument, why does evidence matter?`;
     correct = "Evidence supports claims and helps readers trust the reasoning.";
     distractors = ["Evidence should be avoided in formal writing.", "Evidence is only decoration.", "Evidence replaces the need for a clear claim."];
-    explanation = `ELA proficiency questions should connect claims, evidence, reasoning, audience, and purpose.`;
+    explanation = "Strong arguments connect a clear claim to credible evidence and reasoning.";
   } else if (variant === 3) {
-    prompt = `${unit}: Which answer best fits a grade ${grade} proficiency-level response about ${lesson.title}?`;
+    prompt = `${unit}: Which response best explains an inference from a text?`;
     correct = "A focused answer that uses precise language and explains the reasoning.";
     distractors = ["A one-word answer with no support.", "A copied phrase with no context.", "An answer about an unrelated subject."];
-    explanation = `Higher-quality ELA answers explain thinking clearly and stay tied to the standard.`;
+    explanation = "An inference needs textual support and a clear explanation of the reasoning.";
   } else if (variant === 4) {
-    prompt = `${unit}: Read this situation: ${lesson.example} What should the student do first?`;
-    correct = lesson.solution[0];
-    distractors = ["Skip the text and guess.", "Pick the answer with the most words.", "Ignore the audience and purpose."];
-    explanation = `The first step from the solution gives a strong way to begin the task.`;
+    prompt = `${unit}: Which sentence correctly uses a transition to show cause and effect?`;
+    correct = "The source was outdated; therefore, the researcher found a newer study.";
+    distractors = ["The source was outdated; however, it was outdated.", "The source was outdated, blue, and library.", "The source was outdated because therefore newer."];
+    explanation = "Therefore signals a result or effect.";
   } else if (variant === 5) {
-    prompt = `${unit}: Which choice is the best explanation of ${lesson.title}?`;
-    correct = lesson.explanation;
-    distractors = ["It means speed matters more than understanding.", "It means grammar, evidence, and purpose are unrelated.", "It means every text should be read the same way."];
-    explanation = `The correct explanation describes the actual skill students need to show.`;
+    prompt = `${unit}: Which word has the strongest negative connotation?`;
+    correct = "reckless";
+    distractors = ["bold", "confident", "adventurous"];
+    explanation = "Reckless suggests careless risk, while the other words can sound positive or neutral.";
   } else if (variant === 6) {
-    prompt = `${unit}: Which response best uses audience and purpose for ${lesson.title}?`;
+    prompt = `${unit}: Which choice best fits a formal research presentation?`;
     correct = "It chooses words, structure, and evidence that fit the audience and task.";
     distractors = ["It uses the same tone for every assignment.", "It ignores who will read or hear it.", "It avoids organizing ideas."];
-    explanation = `Audience and purpose affect word choice, structure, evidence, and presentation choices.`;
+    explanation = "Formal presentations need appropriate tone, organization, and evidence for the audience.";
   } else {
-    prompt = `${unit}: Which question would best prepare a student for this standard?`;
-    correct = lesson.miniQuiz;
-    distractors = ["How many pages are in the app?", "Which button is blue?", "What is the easiest answer to click?"];
-    explanation = `A strong prep question should test the exact language skill in the standard: ${lesson.standard}`;
+    prompt = `${unit}: Which sentence correctly uses a semicolon?`;
+    correct = "The evidence was clear; the conclusion was reasonable.";
+    distractors = ["The evidence; was clear and reasonable.", "The evidence was clear; because the conclusion was reasonable.", "The; evidence was clear the conclusion."];
+    explanation = "A semicolon can join two closely related independent clauses.";
   }
 
   const rotated = rotateCorrectAnswer([correct, ...distractors], index);
