@@ -14,9 +14,17 @@ import type { Question } from "../data/curriculum";
 const TEST_LENGTH = 15;
 
 function getQuestionType(question: Question) {
-  const text = `${question.questionType ?? ""} ${question.prompt} ${question.explanation}`.toLowerCase();
+  const text = `${question.prompt} ${question.explanation}`.toLowerCase();
 
   if (text.includes("absolute value")) return "absolute value";
+  if (
+    text.includes("pythagorean") ||
+    text.includes("a^2 + b^2") ||
+    text.includes("right triangle") ||
+    text.includes("hypotenuse")
+  ) {
+    return "pythagorean and right-triangle side lengths";
+  }
   if (text.includes("slope") || text.includes("y-intercept") || text.includes("rate of change") || text.includes("line of best fit")) {
     return "linear rate and slope";
   }
