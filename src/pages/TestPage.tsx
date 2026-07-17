@@ -24,31 +24,49 @@ function getQuestionType(question: Question) {
   return question.questionType ?? question.prompt.split(":")[0] ?? question.id;
 }
 
+function getQuestionDomain(question: Question) {
+  return question.prompt.split(":")[0]?.trim() || getQuestionType(question);
+}
+
 function buildRandomTest(questionBank: Question[], usedQuestionIds: string[]) {
   const used = new Set(usedQuestionIds);
   const available = shuffle(questionBank.filter((question) => !used.has(question.id)));
-  const typeGroups = new Map<string, Question[]>();
+  const domainGroups = new Map<string, Question[]>();
 
   available.forEach((question) => {
-    const type = getQuestionType(question);
-    typeGroups.set(type, [...(typeGroups.get(type) ?? []), question]);
+    const domain = getQuestionDomain(question);
+    domainGroups.set(domain, [...(domainGroups.get(domain) ?? []), question]);
   });
 
   const selected: Question[] = [];
   const selectedIds = new Set<string>();
+  const selectedTypes = new Set<string>();
+  const domainCounts = new Map<string, number>();
+  const domainEntries = shuffle([...domainGroups.entries()]).map(([domain, questions]) => [domain, shuffle(questions)] as const);
+  const maxPerDomain = domainEntries.length ? Math.ceil(TEST_LENGTH / domainEntries.length) : TEST_LENGTH;
 
-  shuffle([...typeGroups.values()]).forEach((group) => {
-    if (selected.length >= TEST_LENGTH) return;
-    const choice = shuffle(group)[0];
-    selected.push(choice);
-    selectedIds.add(choice.id);
-  });
+  let madeSelection = true;
+  while (selected.length < TEST_LENGTH && madeSelection) {
+    madeSelection = false;
+    domainEntries.forEach(([domain, questions]) => {
+      if (selected.length >= TEST_LENGTH || (domainCounts.get(domain) ?? 0) >= maxPerDomain) return;
+      const choice = questions.find((question) => !selectedIds.has(question.id) && !selectedTypes.has(getQuestionType(question)));
+      if (!choice) return;
+      selected.push(choice);
+      selectedIds.add(choice.id);
+      selectedTypes.add(getQuestionType(choice));
+      domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
+      madeSelection = true;
+    });
+  }
 
   if (selected.length < TEST_LENGTH) {
     available.forEach((question) => {
-      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id)) return;
+      const type = getQuestionType(question);
+      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id) || selectedTypes.has(type)) return;
       selected.push(question);
       selectedIds.add(question.id);
+      selectedTypes.add(type);
     });
   }
 
