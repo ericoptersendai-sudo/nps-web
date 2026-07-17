@@ -3308,6 +3308,15 @@ const algebra1MathLessons: Lesson[] = [
   },
   {
     unit: "A1.A Algebraic Reasoning & Algebra",
+    title: "A1.A.3 Quadratic equations by factoring",
+    standard: "Create, factor, and solve simple quadratic equations using algebraic properties.",
+    explanation: "Recognize quadratic equations with an x^2 term, factor trinomials when possible, and use the zero-product property to find solutions.",
+    example: "Solve x^2 - 7x + 12 = 0.",
+    solution: ["Find two numbers that multiply to 12 and add to -7: -3 and -4.", "Factor: (x - 3)(x - 4) = 0.", "Use the zero-product property: x = 3 or x = 4."],
+    miniQuiz: "Solve x^2 - 9x + 20 = 0 by factoring."
+  },
+  {
+    unit: "A1.A Algebraic Reasoning & Algebra",
     title: "A1.A.4 Linear equation analysis",
     standard: "Analyze real-world and mathematical problems involving linear equations.",
     explanation: "Analyze slope, intercepts, rate of change, and meaning of solutions in linear models.",
@@ -5157,7 +5166,53 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
   } else if (grade === 8 || grade === 9) {
     const slope = (index % 5) + 2;
     const intercept = (index % 9) - 4;
-    if (variant === 0) {
+    if (grade === 9 && lesson.title.toLowerCase().includes("quadratic")) {
+      const rootOne = (index % 6) + 2;
+      const rootTwo = rootOne + (index % 4) + 1;
+      const sum = rootOne + rootTwo;
+      const product = rootOne * rootTwo;
+      if (variant === 0) {
+        prompt = `${unit}: Solve x^2 - ${sum}x + ${product} = 0.`;
+        correct = `x = ${rootOne} or x = ${rootTwo}`;
+        distractors = [`x = ${-rootOne} or x = ${-rootTwo}`, `x = ${sum} or x = ${product}`, `x = ${rootOne + 1} or x = ${rootTwo + 1}`];
+        explanation = `Factor to (x - ${rootOne})(x - ${rootTwo}) = 0, then set each factor equal to zero.`;
+      } else if (variant === 1) {
+        prompt = `${unit}: Which factored form is equivalent to x^2 - ${sum}x + ${product}?`;
+        correct = `(x - ${rootOne})(x - ${rootTwo})`;
+        distractors = [`(x + ${rootOne})(x + ${rootTwo})`, `(x - ${sum})(x - ${product})`, `(x + ${rootOne})(x - ${rootTwo})`];
+        explanation = `The factors must multiply to ${product} and add to -${sum}.`;
+      } else if (variant === 2) {
+        prompt = `${unit}: What are the x-intercepts of y = x^2 - ${sum}x + ${product}?`;
+        correct = `(${rootOne}, 0) and (${rootTwo}, 0)`;
+        distractors = [`(${-rootOne}, 0) and (${-rootTwo}, 0)`, `(${sum}, 0) and (${product}, 0)`, `(0, ${rootOne}) and (0, ${rootTwo})`];
+        explanation = `The x-intercepts occur where y = 0, so solve x^2 - ${sum}x + ${product} = 0.`;
+      } else if (variant === 3) {
+        prompt = `${unit}: Which pair of numbers should be used to factor x^2 - ${sum}x + ${product}?`;
+        correct = `-${rootOne} and -${rootTwo}`;
+        distractors = [`${rootOne} and ${rootTwo}`, `-${sum} and -${product}`, `${rootOne} and -${rootTwo}`];
+        explanation = `The pair must multiply to ${product} and add to -${sum}.`;
+      } else if (variant === 4) {
+        prompt = `${unit}: If (x - ${rootOne})(x - ${rootTwo}) = 0, what solutions follow from the zero-product property?`;
+        correct = `x = ${rootOne} or x = ${rootTwo}`;
+        distractors = [`x = -${rootOne} or x = -${rootTwo}`, `x = ${rootOne + rootTwo}`, `x = ${rootOne * rootTwo}`];
+        explanation = `Each factor can equal zero: x - ${rootOne} = 0 or x - ${rootTwo} = 0.`;
+      } else if (variant === 5) {
+        prompt = `${unit}: Which quadratic equation has solutions x = ${rootOne} and x = ${rootTwo}?`;
+        correct = `x^2 - ${sum}x + ${product} = 0`;
+        distractors = [`x^2 + ${sum}x + ${product} = 0`, `x^2 - ${product}x + ${sum} = 0`, `x^2 + ${rootOne}x - ${rootTwo} = 0`];
+        explanation = `Build the equation from (x - ${rootOne})(x - ${rootTwo}) = 0.`;
+      } else if (variant === 6) {
+        prompt = `${unit}: A rectangle has area x^2 - ${sum}x + ${product}. Which dimensions match the area?`;
+        correct = `x - ${rootOne} and x - ${rootTwo}`;
+        distractors = [`x + ${rootOne} and x + ${rootTwo}`, `x - ${sum} and x - ${product}`, `x + ${rootOne} and x - ${rootTwo}`];
+        explanation = `Factoring the area expression gives the side lengths.`;
+      } else {
+        prompt = `${unit}: Which statement explains why x = ${rootOne} is a solution of x^2 - ${sum}x + ${product} = 0?`;
+        correct = `Substituting ${rootOne} makes the equation equal 0.`;
+        distractors = [`${rootOne} is the greatest coefficient.`, `The constant term is ${rootOne}.`, `${rootOne} makes x^2 equal x.`];
+        explanation = `A solution makes the equation true when substituted.`;
+      }
+    } else if (variant === 0) {
       const x = (index % 7) + 2;
       const answer = slope * x + intercept;
       prompt = `${unit}: For f(x) = ${slope}x ${intercept >= 0 ? "+" : "-"} ${Math.abs(intercept)}, find f(${x}).`;
