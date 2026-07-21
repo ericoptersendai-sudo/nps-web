@@ -6,6 +6,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { trackEvent } from "../utils/analytics";
 
 export function GradePage() {
   const { grade, setGrade } = useGrade();
@@ -27,6 +28,7 @@ export function GradePage() {
               onClick={() => {
                 setGrade(item);
                 recordGradeSelection(item);
+                trackEvent("grade_selected", { grade: item });
               }}
               className={`relative flex min-h-36 flex-col items-center justify-center rounded-lg border p-6 text-center shadow-soft transition ${
                 selected ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-slate-200 bg-white hover:border-[var(--accent)] dark:border-white/10 dark:bg-slate-900"

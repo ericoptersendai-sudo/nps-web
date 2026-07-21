@@ -11,6 +11,7 @@ import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import type { Question } from "../data/curriculum";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { trackEvent } from "../utils/analytics";
 
 const TEST_LENGTH = 50;
 
@@ -169,11 +170,17 @@ export function TestPage() {
     setSubmitted(true);
     recordTest(score, validQuestions.length);
     recordTestCompleted(score, validQuestions.length);
+    trackEvent("test_completed", {
+      grade,
+      subject: selectedSubject,
+      score_band: percent === 100 ? "100%" : `${Math.floor(percent / 10) * 10}-${Math.floor(percent / 10) * 10 + 9}%`
+    });
   }
 
   function chooseSubject(subject: Subject) {
     setSelectedSubject(subject);
     recordSubjectSelection(subject);
+    trackEvent("test_subject_selected", { subject, grade });
   }
 
   function startNewTest() {

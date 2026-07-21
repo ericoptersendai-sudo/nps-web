@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { CookieConsent } from "../components/CookieConsent";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { loadGoogleAnalytics, trackPageView } from "../utils/analytics";
 
 const SESSION_OPEN_RECORDED_KEY = "nps-usage-open-recorded";
 
@@ -16,10 +17,12 @@ export function AppLayout() {
       recordSiteOpen();
       sessionStorage.setItem(SESSION_OPEN_RECORDED_KEY, "true");
     }
+    loadGoogleAnalytics();
   }, [recordSiteOpen]);
 
   useEffect(() => {
     recordPageView(location.pathname);
+    trackPageView(location.pathname);
   }, [location.pathname, recordPageView]);
 
   return (

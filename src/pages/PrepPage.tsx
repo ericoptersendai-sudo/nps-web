@@ -10,6 +10,7 @@ import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { trackEvent } from "../utils/analytics";
 
 export function PrepPage() {
   const { grade } = useGrade();
@@ -62,6 +63,7 @@ export function PrepPage() {
                 setActiveSubject(item.subject);
                 recordSubject(item.subject);
                 recordSubjectSelection(item.subject);
+                trackEvent("prep_subject_selected", { subject: item.subject, grade });
                 setStudyMode(false);
                 setPracticeIndex(0);
                 resetProblem();

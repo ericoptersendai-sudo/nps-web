@@ -5,6 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../context/AuthContext";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { trackEvent } from "../utils/analytics";
 
 type Mode = "login" | "create";
 
@@ -24,8 +25,10 @@ export function LoginPage() {
     if (result.ok) {
       if (mode === "create") {
         recordAccountCreated();
+        trackEvent("account_created");
       } else {
         recordAccountLogin();
+        trackEvent("account_login");
       }
       setPasscode("");
       navigate("/");
