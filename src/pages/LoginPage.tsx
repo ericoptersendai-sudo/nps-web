@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../context/AuthContext";
+import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 
 type Mode = "login" | "create";
 
 export function LoginPage() {
   const { currentUser, createAccount, signIn, signOut } = useAuth();
+  const { recordAccountCreated, recordAccountLogin } = useUsageAnalytics();
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
@@ -20,6 +22,11 @@ export function LoginPage() {
     const result = mode === "create" ? createAccount(username, passcode) : signIn(username, passcode);
     setMessage(result.message);
     if (result.ok) {
+      if (mode === "create") {
+        recordAccountCreated();
+      } else {
+        recordAccountLogin();
+      }
       setPasscode("");
       navigate("/");
     }

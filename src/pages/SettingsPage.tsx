@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { BarChart3, Languages, Moon, Palette, Sun, Trash2, Type, Volume2 } from "lucide-react";
+import { BarChart3, Languages, Moon, Palette, Sun, Type, Volume2 } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
 import { languageOptions, translate } from "../utils/i18n";
 import type { Language } from "../utils/i18n";
@@ -35,7 +35,7 @@ const USAGE_PASSWORD = "140204";
 
 export function SettingsPage() {
   const { settings, updateSettings } = useSettings();
-  const { stats, clearUsageStats } = useUsageAnalytics();
+  const { stats } = useUsageAnalytics();
   const [usagePassword, setUsagePassword] = useState("");
   const [usageUnlocked, setUsageUnlocked] = useState(() => sessionStorage.getItem("nps-usage-unlocked") === "true");
   const [usageError, setUsageError] = useState("");
@@ -169,6 +169,14 @@ export function SettingsPage() {
                   <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Events")}</p>
                   <p className="mt-1 text-3xl font-black">{stats.eventsRecorded}</p>
                 </div>
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Account logins")}</p>
+                  <p className="mt-1 text-3xl font-black">{stats.accountLogins}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Accounts created")}</p>
+                  <p className="mt-1 text-3xl font-black">{stats.accountsCreated}</p>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -208,9 +216,6 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <button onClick={clearUsageStats} className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 font-extrabold text-slate-700 hover:border-rose-500 hover:text-rose-600 dark:border-white/10 dark:text-slate-100">
-                <Trash2 size={18} /> {t("Clear usage stats")}
-              </button>
             </>
           )}
         </Panel>

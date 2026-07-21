@@ -3,6 +3,8 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 
 type UsageStats = {
   siteOpens: number;
+  accountLogins: number;
+  accountsCreated: number;
   pageViews: Record<string, number>;
   gradeSelections: Record<string, number>;
   subjectSelections: Record<string, number>;
@@ -15,15 +17,18 @@ type UsageStats = {
 type UsageAnalyticsContextValue = {
   stats: UsageStats;
   recordSiteOpen: () => void;
+  recordAccountLogin: () => void;
+  recordAccountCreated: () => void;
   recordPageView: (path: string) => void;
   recordGradeSelection: (grade: number) => void;
   recordSubjectSelection: (subject: string) => void;
   recordTestCompleted: (score: number, total: number) => void;
-  clearUsageStats: () => void;
 };
 
 const defaultStats: UsageStats = {
   siteOpens: 0,
+  accountLogins: 0,
+  accountsCreated: 0,
   pageViews: {},
   gradeSelections: {},
   subjectSelections: {},
@@ -34,6 +39,23 @@ const defaultStats: UsageStats = {
 };
 
 const UsageAnalyticsContext = createContext<UsageAnalyticsContextValue | null>(null);
+
+function normalizeStats(stats: UsageStats) {
+  return {
+    ...defaultStats,
+    ...stats,
+    siteOpens: Number.isFinite(stats.siteOpens) ? stats.siteOpens : 0,
+    accountLogins: Number.isFinite(stats.accountLogins) ? stats.accountLogins : 0,
+    accountsCreated: Number.isFinite(stats.accountsCreated) ? stats.accountsCreated : 0,
+    pageViews: stats.pageViews ?? {},
+    gradeSelections: stats.gradeSelections ?? {},
+    subjectSelections: stats.subjectSelections ?? {},
+    testsCompleted: Number.isFinite(stats.testsCompleted) ? stats.testsCompleted : 0,
+    scoreBands: stats.scoreBands ?? {},
+    eventsRecorded: Number.isFinite(stats.eventsRecorded) ? stats.eventsRecorded : 0,
+    recentEvents: Array.isArray(stats.recentEvents) ? stats.recentEvents : []
+  };
+}
 
 function scoreBand(score: number, total: number) {
   const percent = total ? Math.round((score / total) * 100) : 0;
@@ -54,7 +76,8 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
 
   const updateStats = useCallback((eventLabel: string, update: (current: UsageStats) => UsageStats) => {
     setStats((current) => {
-      const next = update(current);
+      const normalizedCurrent = normalizeStats(current);
+      const next = normalizeStats(update(normalizedCurrent));
       return {
         ...next,
         eventsRecorded: next.eventsRecorded + 1,
@@ -67,6 +90,20 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
     updateStats("Opened website on this browser", (current) => ({
       ...current,
       siteOpens: current.siteOpens + 1
+    }));
+  }, [updateStats]);
+
+  const recordAccountLogin = useCallback(() => {
+    updateStats("Account logged in on this browser", (current) => ({
+      ...current,
+      accountLogins: current.accountLogins + 1
+    }));
+  }, [updateStats]);
+
+  const recordAccountCreated = useCallback(() => {
+    updateStats("Account created on this browser", (current) => ({
+      ...current,
+      accountsCreated: current.accountsCreated + 1
     }));
   }, [updateStats]);
 
@@ -100,21 +137,18 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateStats]);
 
-  const clearUsageStats = useCallback(() => {
-    setStats(defaultStats);
-  }, [setStats]);
-
   const value = useMemo<UsageAnalyticsContextValue>(
     () => ({
-      stats,
+      stats: normalizeStats(stats),
       recordSiteOpen,
+      recordAccountLogin,
+      recordAccountCreated,
       recordPageView,
       recordGradeSelection,
       recordSubjectSelection,
-      recordTestCompleted,
-      clearUsageStats
+      recordTestCompleted
     }),
-    [clearUsageStats, recordGradeSelection, recordPageView, recordSiteOpen, recordSubjectSelection, recordTestCompleted, stats]
+    [recordAccountCreated, recordAccountLogin, recordGradeSelection, recordPageView, recordSiteOpen, recordSubjectSelection, recordTestCompleted, stats]
   );
 
   return <UsageAnalyticsContext.Provider value={value}>{children}</UsageAnalyticsContext.Provider>;
