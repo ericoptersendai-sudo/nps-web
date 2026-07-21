@@ -1,3 +1,4 @@
+import { FormEvent, useState } from "react";
 import { BarChart3, Languages, Moon, Palette, Sun, Trash2, Type, Volume2 } from "lucide-react";
 import { useSettings } from "../context/SettingsContext";
 import { languageOptions, translate } from "../utils/i18n";
@@ -30,10 +31,27 @@ function topEntries(counts: Record<string, number>) {
     .slice(0, 5);
 }
 
+const USAGE_PASSWORD = "140204";
+
 export function SettingsPage() {
   const { settings, updateSettings } = useSettings();
   const { stats, clearUsageStats } = useUsageAnalytics();
+  const [usagePassword, setUsagePassword] = useState("");
+  const [usageUnlocked, setUsageUnlocked] = useState(() => sessionStorage.getItem("nps-usage-unlocked") === "true");
+  const [usageError, setUsageError] = useState("");
   const t = (text: string) => translate(text, settings.language);
+
+  function unlockUsage(event: FormEvent) {
+    event.preventDefault();
+    if (usagePassword === USAGE_PASSWORD) {
+      sessionStorage.setItem("nps-usage-unlocked", "true");
+      setUsageUnlocked(true);
+      setUsageError("");
+      setUsagePassword("");
+      return;
+    }
+    setUsageError("Incorrect password.");
+  }
 
   return (
     <>
@@ -115,65 +133,86 @@ export function SettingsPage() {
             <BarChart3 className="text-[var(--accent)]" />
             <h2 className="text-2xl font-black">{t("Anonymous Usage")}</h2>
           </div>
-          <p className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            {t("These counts stay in this browser. They do not include usernames, passcodes, or school-wide totals from other devices.")}
-          </p>
+          {!usageUnlocked ? (
+            <form onSubmit={unlockUsage} className="mt-5 grid gap-3">
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t("Enter the usage password to view anonymous stats.")}</p>
+              <input
+                value={usagePassword}
+                onChange={(event) => setUsagePassword(event.target.value)}
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 font-bold outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-slate-950 dark:focus:ring-blue-950"
+                placeholder={t("Password")}
+              />
+              {usageError && <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-extrabold text-rose-700 dark:bg-rose-950/40 dark:text-rose-100">{t(usageError)}</p>}
+              <button type="submit" className="rounded-lg bg-[var(--accent)] px-5 py-3 font-extrabold text-white shadow-soft">
+                {t("Unlock Usage")}
+              </button>
+            </form>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {t("These counts stay in this browser. They do not include usernames, passcodes, or school-wide totals from other devices.")}
+              </p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
-              <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Site opens")}</p>
-              <p className="mt-1 text-3xl font-black">{stats.siteOpens}</p>
-            </div>
-            <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
-              <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Tests completed")}</p>
-              <p className="mt-1 text-3xl font-black">{stats.testsCompleted}</p>
-            </div>
-            <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
-              <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Events")}</p>
-              <p className="mt-1 text-3xl font-black">{stats.eventsRecorded}</p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            <div>
-              <p className="font-black">{t("Most opened pages")}</p>
-              <div className="mt-2 grid gap-2">
-                {topEntries(stats.pageViews).map(([label, count]) => (
-                  <p key={label} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">
-                    <span>{label === "/" ? t("Home") : label}</span>
-                    <span>{count}</span>
-                  </p>
-                ))}
-                {topEntries(stats.pageViews).length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No page views yet.")}</p>}
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Site opens")}</p>
+                  <p className="mt-1 text-3xl font-black">{stats.siteOpens}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Tests completed")}</p>
+                  <p className="mt-1 text-3xl font-black">{stats.testsCompleted}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Events")}</p>
+                  <p className="mt-1 text-3xl font-black">{stats.eventsRecorded}</p>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="font-black">{t("Score bands")}</p>
-              <div className="mt-2 grid gap-2">
-                {topEntries(stats.scoreBands).map(([label, count]) => (
-                  <p key={label} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">
-                    <span>{label}</span>
-                    <span>{count}</span>
-                  </p>
-                ))}
-                {topEntries(stats.scoreBands).length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No completed tests yet.")}</p>}
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div>
+                  <p className="font-black">{t("Most opened pages")}</p>
+                  <div className="mt-2 grid gap-2">
+                    {topEntries(stats.pageViews).map(([label, count]) => (
+                      <p key={label} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">
+                        <span>{label === "/" ? t("Home") : label}</span>
+                        <span>{count}</span>
+                      </p>
+                    ))}
+                    {topEntries(stats.pageViews).length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No page views yet.")}</p>}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-black">{t("Score bands")}</p>
+                  <div className="mt-2 grid gap-2">
+                    {topEntries(stats.scoreBands).map(([label, count]) => (
+                      <p key={label} className="flex justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">
+                        <span>{label}</span>
+                        <span>{count}</span>
+                      </p>
+                    ))}
+                    {topEntries(stats.scoreBands).length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No completed tests yet.")}</p>}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-5">
-            <p className="font-black">{t("Recent anonymous events")}</p>
-            <div className="mt-2 grid gap-2">
-              {stats.recentEvents.map((event) => (
-                <p key={event} className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">{t(event)}</p>
-              ))}
-              {stats.recentEvents.length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No events yet.")}</p>}
-            </div>
-          </div>
+              <div className="mt-5">
+                <p className="font-black">{t("Recent anonymous events")}</p>
+                <div className="mt-2 grid gap-2">
+                  {stats.recentEvents.map((event) => (
+                    <p key={event} className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold dark:bg-white/5">{t(event)}</p>
+                  ))}
+                  {stats.recentEvents.length === 0 && <p className="text-sm font-semibold text-slate-500 dark:text-slate-300">{t("No events yet.")}</p>}
+                </div>
+              </div>
 
-          <button onClick={clearUsageStats} className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 font-extrabold text-slate-700 hover:border-rose-500 hover:text-rose-600 dark:border-white/10 dark:text-slate-100">
-            <Trash2 size={18} /> {t("Clear usage stats")}
-          </button>
+              <button onClick={clearUsageStats} className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 font-extrabold text-slate-700 hover:border-rose-500 hover:text-rose-600 dark:border-white/10 dark:text-slate-100">
+                <Trash2 size={18} /> {t("Clear usage stats")}
+              </button>
+            </>
+          )}
         </Panel>
       </div>
     </>
