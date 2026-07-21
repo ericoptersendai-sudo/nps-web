@@ -3,12 +3,14 @@ import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 type Account = {
   username: string;
   passcode: string;
+  recoveryPasskey?: string;
 };
 
 type AuthContextValue = {
   currentUser: string | null;
-  createAccount: (username: string, passcode: string) => { ok: boolean; message: string };
+  createAccount: (username: string, passcode: string, recoveryPasskey: string) => { ok: boolean; message: string };
   signIn: (username: string, passcode: string) => { ok: boolean; message: string };
+  resetPasscode: (username: string, recoveryPasskey: string, newPasscode: string) => { ok: boolean; message: string };
   signOut: () => void;
 };
 
@@ -36,13 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       currentUser,
-      createAccount(username, passcode) {
+      createAccount(username, passcode, recoveryPasskey) {
         const cleanUsername = username.trim();
+        const cleanRecoveryPasskey = recoveryPasskey.trim();
         if (cleanUsername.length < 3) {
           return { ok: false, message: "Username must be at least 3 characters." };
         }
         if (passcode.length < 4) {
           return { ok: false, message: "Passcode must be at least 4 characters." };
+        }
+        if (cleanRecoveryPasskey.length < 4) {
+          return { ok: false, message: "Recovery passkey must be at least 4 characters." };
         }
 
         const accounts = readAccounts();
@@ -50,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "That username already exists. Try logging in." };
         }
 
-        saveAccounts([...accounts, { username: cleanUsername, passcode }]);
+        saveAccounts([...accounts, { username: cleanUsername, passcode, recoveryPasskey: cleanRecoveryPasskey }]);
         localStorage.removeItem(CURRENT_USER_KEY);
         sessionStorage.setItem(SESSION_USER_KEY, cleanUsername);
         setCurrentUser(cleanUsername);
@@ -67,6 +73,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(SESSION_USER_KEY, account.username);
         setCurrentUser(account.username);
         return { ok: true, message: "Signed in." };
+      },
+      resetPasscode(username, recoveryPasskey, newPasscode) {
+        const cleanUsername = username.trim();
+        const cleanRecoveryPasskey = recoveryPasskey.trim();
+        if (newPasscode.length < 4) {
+          return { ok: false, message: "New passcode must be at least 4 characters." };
+        }
+
+        const accounts = readAccounts();
+        const accountIndex = accounts.findIndex((item) => item.username.toLowerCase() === cleanUsername.toLowerCase());
+        const account = accounts[accountIndex];
+        if (!account) {
+          return { ok: false, message: "No account was found with that username." };
+        }
+        if (!account.recoveryPasskey) {
+          return { ok: false, message: "This account does not have a recovery passkey yet." };
+        }
+        if (account.recoveryPasskey !== cleanRecoveryPasskey) {
+          return { ok: false, message: "Recovery passkey is incorrect." };
+        }
+
+        const updatedAccounts = [...accounts];
+        updatedAccounts[accountIndex] = { ...account, passcode: newPasscode };
+        saveAccounts(updatedAccounts);
+        return { ok: true, message: "Passcode reset. You can log in now." };
       },
       signOut() {
         localStorage.removeItem(CURRENT_USER_KEY);

@@ -1,4 +1,4 @@
-import { Home, TestTube2, GraduationCap, Layers3, Info, Settings, UserRound } from "lucide-react";
+import { Home, TestTube2, GraduationCap, Layers3, Info, Settings, UserRound, HelpCircle } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useSettings } from "../context/SettingsContext";
@@ -11,6 +11,7 @@ const items = [
   { to: "/prep", label: "Prep", icon: GraduationCap },
   { to: "/grade", label: "Grade", icon: Layers3 },
   { to: "/info", label: "Info", icon: Info },
+  { to: "/help", label: "Help", icon: HelpCircle },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/login", label: "Login", icon: UserRound }
 ];
@@ -28,7 +29,7 @@ export function Sidebar() {
           <Logo />
         </Link>
       </div>
-      <nav className={`${currentUser ? "grid-cols-7" : "grid-cols-1"} grid gap-1 md:mt-10 md:grid-cols-1 md:gap-2`}>
+      <nav className={`${currentUser ? "grid-cols-8" : "grid-cols-1"} grid gap-1 md:mt-10 md:grid-cols-1 md:gap-2`}>
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
