@@ -1,10 +1,26 @@
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { CookieConsent } from "../components/CookieConsent";
+import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+
+const SESSION_OPEN_RECORDED_KEY = "nps-usage-open-recorded";
 
 export function AppLayout() {
   const location = useLocation();
+  const { recordPageView, recordSiteOpen } = useUsageAnalytics();
+
+  useEffect(() => {
+    if (!sessionStorage.getItem(SESSION_OPEN_RECORDED_KEY)) {
+      recordSiteOpen();
+      sessionStorage.setItem(SESSION_OPEN_RECORDED_KEY, "true");
+    }
+  }, [recordSiteOpen]);
+
+  useEffect(() => {
+    recordPageView(location.pathname);
+  }, [location.pathname, recordPageView]);
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-slate-900 brightness-[var(--brightness)] transition dark:text-white">

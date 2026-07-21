@@ -5,6 +5,7 @@ import { GradeProvider } from "./context/GradeContext";
 import { ProgressProvider } from "./context/ProgressContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { UsageAnalyticsProvider } from "./context/UsageAnalyticsContext";
 import { HomePage } from "./pages/HomePage";
 import { TestPage } from "./pages/TestPage";
 import { PrepPage } from "./pages/PrepPage";
@@ -24,18 +25,20 @@ export default function App() {
       <GradeProvider>
         <ProgressProvider>
           <AuthProvider>
-            <Routes>
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
-                <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
-                <Route path="/prep" element={<RequireAuth><PrepPage /></RequireAuth>} />
-                <Route path="/grade" element={<RequireAuth><GradePage /></RequireAuth>} />
-                <Route path="/info" element={<RequireAuth><InfoPage /></RequireAuth>} />
-                <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-                <Route path="/login" element={<LoginPage />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <UsageAnalyticsProvider>
+              <Routes>
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
+                  <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
+                  <Route path="/prep" element={<RequireAuth><PrepPage /></RequireAuth>} />
+                  <Route path="/grade" element={<RequireAuth><GradePage /></RequireAuth>} />
+                  <Route path="/info" element={<RequireAuth><InfoPage /></RequireAuth>} />
+                  <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+                  <Route path="/login" element={<LoginPage />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </UsageAnalyticsProvider>
           </AuthProvider>
         </ProgressProvider>
       </GradeProvider>

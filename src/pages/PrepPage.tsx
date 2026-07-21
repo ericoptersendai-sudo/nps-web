@@ -9,11 +9,13 @@ import { Panel } from "../components/Panel";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
+import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 
 export function PrepPage() {
   const { grade } = useGrade();
   const { recordSubject } = useProgress();
   const { settings } = useSettings();
+  const { recordSubjectSelection } = useUsageAnalytics();
   const t = (text: string) => translate(text, settings.language);
   const gradeLabel = getGradeLabel(grade);
   const curriculum = getCurriculum(grade);
@@ -59,6 +61,7 @@ export function PrepPage() {
               onClick={() => {
                 setActiveSubject(item.subject);
                 recordSubject(item.subject);
+                recordSubjectSelection(item.subject);
                 setStudyMode(false);
                 setPracticeIndex(0);
                 resetProblem();

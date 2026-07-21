@@ -5,10 +5,12 @@ import { grades } from "../data/curriculum";
 import { PageHeader } from "../components/PageHeader";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
+import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 
 export function GradePage() {
   const { grade, setGrade } = useGrade();
   const { settings } = useSettings();
+  const { recordGradeSelection } = useUsageAnalytics();
   const t = (text: string) => translate(text, settings.language);
 
   return (
@@ -22,7 +24,10 @@ export function GradePage() {
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98 }}
               key={item}
-              onClick={() => setGrade(item)}
+              onClick={() => {
+                setGrade(item);
+                recordGradeSelection(item);
+              }}
               className={`relative flex min-h-36 flex-col items-center justify-center rounded-lg border p-6 text-center shadow-soft transition ${
                 selected ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-slate-200 bg-white hover:border-[var(--accent)] dark:border-white/10 dark:bg-slate-900"
               }`}

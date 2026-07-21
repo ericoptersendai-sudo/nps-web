@@ -10,6 +10,7 @@ import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import type { Question } from "../data/curriculum";
+import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 
 const TEST_LENGTH = 50;
 
@@ -126,6 +127,7 @@ export function TestPage() {
   const { grade } = useGrade();
   const { recordTest } = useProgress();
   const { settings } = useSettings();
+  const { recordSubjectSelection, recordTestCompleted } = useUsageAnalytics();
   const t = (text: string) => translate(text, settings.language);
   const gradeLabel = getGradeLabel(grade);
   const subjects = useMemo(() => getCurriculum(grade), [grade]);
@@ -166,6 +168,12 @@ export function TestPage() {
     if (!validQuestions.length) return;
     setSubmitted(true);
     recordTest(score, validQuestions.length);
+    recordTestCompleted(score, validQuestions.length);
+  }
+
+  function chooseSubject(subject: Subject) {
+    setSelectedSubject(subject);
+    recordSubjectSelection(subject);
   }
 
   function startNewTest() {
@@ -186,7 +194,7 @@ export function TestPage() {
             {subjects.map((item) => (
               <button
                 key={item.subject}
-                onClick={() => setSelectedSubject(item.subject)}
+                onClick={() => chooseSubject(item.subject)}
                 className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left font-extrabold transition ${
                   selectedSubject === item.subject
                     ? "border-[var(--accent)] bg-white text-[var(--accent)] shadow-soft dark:bg-slate-900"
@@ -253,7 +261,7 @@ export function TestPage() {
           {subjects.map((item) => (
             <button
               key={item.subject}
-              onClick={() => setSelectedSubject(item.subject)}
+              onClick={() => chooseSubject(item.subject)}
               className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left font-extrabold transition ${
                 selectedSubject === item.subject
                   ? "border-[var(--accent)] bg-white text-[var(--accent)] shadow-soft dark:bg-slate-900"
