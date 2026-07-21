@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
+import { CookieConsent } from "../components/CookieConsent";
 
 export function AppLayout() {
   const location = useLocation();
@@ -22,6 +23,7 @@ export function AppLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
+      <CookieConsent />
     </div>
   );
 }
