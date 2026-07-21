@@ -33,6 +33,22 @@ function getQuestionType(question: Question) {
   return question.questionType ?? question.prompt.split(":")[0] ?? question.id;
 }
 
+function getQuestionTopic(question: Question) {
+  const text = `${question.prompt} ${question.explanation}`.toLowerCase();
+  const topicChecks: Array<[string, string[]]> = [
+    ["percent conversion and percent reasoning", ["percent", "%"]],
+    ["ratio and proportion", ["ratio", "proportion", "unit rate", "constant of proportionality"]],
+    ["probability", ["probability", "likely", "outcomes", "spinner", "marbles", "tiles"]],
+    ["absolute value", ["absolute value", "|x", "| -", "|-"]],
+    ["linear slope and rate of change", ["slope", "rate of change", "y-intercept", "line of best fit"]],
+    ["quadratic equations and functions", ["quadratic", "x^2", "parabola", "parabolic", "factored form", "zero-product"]],
+    ["pythagorean theorem", ["pythagorean", "a^2 + b^2", "hypotenuse"]]
+  ];
+  const matched = topicChecks.find(([, needles]) => needles.some((needle) => text.includes(needle)));
+  if (matched) return matched[0];
+  return getQuestionType(question);
+}
+
 function getQuestionShape(question: Question) {
   return question.prompt
     .replace(/^[^:]+:\s*/, "")
@@ -46,7 +62,7 @@ function getQuestionShape(question: Question) {
 }
 
 function getQuestionPattern(question: Question) {
-  return `${getQuestionType(question)} | ${getQuestionShape(question)}`;
+  return `${getQuestionTopic(question)} | ${getQuestionType(question)} | ${getQuestionShape(question)}`;
 }
 
 function getQuestionDomain(question: Question) {
@@ -66,8 +82,8 @@ function buildRandomTest(questionBank: Question[], usedQuestionIds: string[]) {
   const selected: Question[] = [];
   const selectedIds = new Set<string>();
   const selectedTypes = new Set<string>();
+  const selectedTopics = new Set<string>();
   const selectedPatterns = new Set<string>();
-  const selectedShapes = new Set<string>();
   const domainCounts = new Map<string, number>();
   const domainEntries = shuffle([...domainGroups.entries()]).map(([domain, questions]) => [domain, shuffle(questions)] as const);
   const maxPerDomain = domainEntries.length ? Math.ceil(TEST_LENGTH / domainEntries.length) : TEST_LENGTH;
@@ -77,13 +93,13 @@ function buildRandomTest(questionBank: Question[], usedQuestionIds: string[]) {
     madeSelection = false;
     domainEntries.forEach(([domain, questions]) => {
       if (selected.length >= TEST_LENGTH || (domainCounts.get(domain) ?? 0) >= maxPerDomain) return;
-      const choice = questions.find((question) => !selectedIds.has(question.id) && !selectedTypes.has(getQuestionType(question)) && !selectedPatterns.has(getQuestionPattern(question)) && !selectedShapes.has(getQuestionShape(question)));
+      const choice = questions.find((question) => !selectedIds.has(question.id) && !selectedTopics.has(getQuestionTopic(question)) && !selectedTypes.has(getQuestionType(question)) && !selectedPatterns.has(getQuestionPattern(question)));
       if (!choice) return;
       selected.push(choice);
       selectedIds.add(choice.id);
+      selectedTopics.add(getQuestionTopic(choice));
       selectedTypes.add(getQuestionType(choice));
       selectedPatterns.add(getQuestionPattern(choice));
-      selectedShapes.add(getQuestionShape(choice));
       domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
       madeSelection = true;
     });
@@ -91,24 +107,14 @@ function buildRandomTest(questionBank: Question[], usedQuestionIds: string[]) {
 
   if (selected.length < TEST_LENGTH) {
     available.forEach((question) => {
+      const topic = getQuestionTopic(question);
       const type = getQuestionType(question);
       const pattern = getQuestionPattern(question);
-      const shape = getQuestionShape(question);
-      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id) || selectedTypes.has(type) || selectedPatterns.has(pattern) || selectedShapes.has(shape)) return;
+      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id) || selectedTopics.has(topic) || selectedTypes.has(type) || selectedPatterns.has(pattern)) return;
       selected.push(question);
       selectedIds.add(question.id);
+      selectedTopics.add(topic);
       selectedTypes.add(type);
-      selectedPatterns.add(pattern);
-      selectedShapes.add(shape);
-    });
-  }
-
-  if (selected.length < TEST_LENGTH) {
-    available.forEach((question) => {
-      const pattern = getQuestionPattern(question);
-      if (selected.length >= TEST_LENGTH || selectedIds.has(question.id) || selectedPatterns.has(pattern)) return;
-      selected.push(question);
-      selectedIds.add(question.id);
       selectedPatterns.add(pattern);
     });
   }

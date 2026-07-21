@@ -5043,7 +5043,8 @@ function testMathPrompt(prompt: string) {
 
 function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
   const bankOffset = bankKind === "test" ? 10000 : 0;
-  const variant = (patternIndex + (bankKind === "test" ? 3 : 0)) % 8;
+  const variantCount = grade <= 5 ? 8 : grade <= 7 ? 10 : grade === 10 ? 12 : grade === 11 || grade === 12 ? 16 : 14;
+  const variant = (patternIndex + (bankKind === "test" ? 3 : 0)) % variantCount;
   const base = grade * 11 + index + bankOffset;
   const a = (base % 19) + grade + 3;
   const b = (base % 13) + grade + 2;
@@ -5164,13 +5165,26 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
       correct = `${answer}`;
       distractors = [`${a * 2}`, `${answer + a}`, `${answer - a}`];
       explanation = `${a}^2 means ${a} x ${a} = ${answer}.`;
-    } else {
+    } else if (variant === 7) {
       const values = [a, b, c, grade + (index % 6)];
       const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
       prompt = `${unit}: What is the mean of ${values.join(", ")}?`;
       correct = `${mean}`;
       distractors = [`${Math.max(...values)}`, `${Math.min(...values)}`, `${values.reduce((sum, value) => sum + value, 0)}`];
       explanation = `Add the values and divide by ${values.length}.`;
+    } else if (variant === 8) {
+      const expression = a + b * c - grade;
+      prompt = `${unit}: Simplify ${a} + ${b} x ${c} - ${grade}.`;
+      correct = `${expression}`;
+      distractors = [`${(a + b) * c - grade}`, `${a + b * (c - grade)}`, `${expression + b}`];
+      explanation = `Multiply before adding or subtracting: ${b} x ${c} = ${b * c}, then combine.`;
+    } else {
+      const total = a * b;
+      const missing = total / b;
+      prompt = `${unit}: A proportional table has y = ${b}x. If y = ${total}, what is x?`;
+      correct = `${missing}`;
+      distractors = [`${total + b}`, `${total - b}`, `${b}`];
+      explanation = `Divide the output by the multiplier: ${total} / ${b} = ${missing}.`;
     }
   } else if (grade === 8 || grade === 9) {
     const slope = (index % 5) + 2;
@@ -5266,12 +5280,53 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
       correct = "A table where y increases by the same amount whenever x increases by 1.";
       distractors = ["A graph shaped like a circle.", "A pattern where y doubles each step.", "A relation with no consistent rate of change."];
       explanation = `Linear relationships have a constant rate of change.`;
-    } else {
+    } else if (variant === 7) {
       const probability = ((index % 8) + 1) / 10;
       prompt = `${unit}: An experiment has probability ${probability}. Which percent is equivalent?`;
       correct = `${probability * 100}%`;
       distractors = [`${probability}%`, `${probability * 10}%`, `${probability * 100 + 10}%`];
       explanation = `Multiply the decimal probability by 100 to convert to a percent.`;
+    } else if (variant === 8) {
+      const left = slope + 1;
+      const right = slope * a + intercept;
+      prompt = `${unit}: Solve ${left}(x - ${c}) + ${b} = ${right}.`;
+      correct = `${(right - b) / left + c}`;
+      distractors = [`${(right + b) / left + c}`, `${right - b}`, `${c - left}`];
+      explanation = `Undo the outside operations first, then add ${c} after isolating x - ${c}.`;
+    } else if (variant === 9) {
+      const value = a - b;
+      prompt = `${unit}: Which inequality describes all numbers within ${c} units of ${value}?`;
+      correct = `|x - ${value}| <= ${c}`;
+      distractors = [`|x + ${value}| <= ${c}`, `|x - ${c}| <= ${value}`, `x - ${value} <= ${c}`];
+      explanation = `Within ${c} units of ${value} means the distance from x to ${value} is at most ${c}.`;
+    } else if (variant === 10) {
+      prompt = `${unit}: A table has first differences ${b}, ${b}, ${b} and second differences 0. What type of function is most reasonable?`;
+      correct = "linear";
+      distractors = ["quadratic", "exponential", "absolute value"];
+      explanation = `Constant first differences indicate a linear function.`;
+    } else if (variant === 11) {
+      const side = (index % 6) + 5;
+      const diagonalSquared = 2 * side ** 2;
+      prompt = `${unit}: A square has side length ${side}. What is the square of its diagonal length?`;
+      correct = `${diagonalSquared}`;
+      distractors = [`${side ** 2}`, `${4 * side}`, `${2 * side}`];
+      explanation = `The diagonal is the hypotenuse of a right triangle with legs ${side} and ${side}, so d^2 = ${side ** 2} + ${side ** 2}.`;
+    } else if (variant === 12) {
+      const first = a - c;
+      const second = b + c;
+      prompt = `${unit}: Compare ${first}/${second} and ${(first + 1)}/${second + 2}. Which is greater?`;
+      const leftValue = first / second;
+      const rightValue = (first + 1) / (second + 2);
+      correct = leftValue > rightValue ? `${first}/${second}` : `${first + 1}/${second + 2}`;
+      distractors = [leftValue > rightValue ? `${first + 1}/${second + 2}` : `${first}/${second}`, "They are equal.", "Cannot be determined"];
+      explanation = `Use cross-products to compare the fractions without rounding.`;
+    } else {
+      const x = (index % 5) + 2;
+      const y = slope * x + intercept;
+      prompt = `${unit}: A line contains (${x}, ${y}) and has slope ${slope}. What is its y-intercept?`;
+      correct = `${intercept}`;
+      distractors = [`${slope}`, `${y}`, `${intercept + slope}`];
+      explanation = `Use y = mx + b, so ${y} = ${slope}(${x}) + b and b = ${intercept}.`;
     }
   } else if (grade === 10) {
     const angle = 30 + 5 * (index % 8);
@@ -5456,11 +5511,60 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
       correct = `${a} + ${c}i`;
       distractors = [`${a}`, `${-b}`, `${a + c}`];
       explanation = `A non-real complex number includes an i term.`;
-    } else {
+    } else if (variant === 7) {
       prompt = `${unit}: Add the matrices [[${a}, ${b}], [${c}, ${grade}]] and [[1, 2], [3, 4]]. What is the top-left entry?`;
       correct = `${a + 1}`;
       distractors = [`${a}`, `${a + 2}`, `${b + 1}`];
       explanation = `Add corresponding entries, so the top-left entry is ${a} + 1.`;
+    } else if (variant === 8) {
+      prompt = `${unit}: Simplify (${a} + ${c}i) - (${b} - ${grade}i).`;
+      correct = `${a - b} + ${c + grade}i`;
+      distractors = [`${a + b} + ${c - grade}i`, `${a - b} - ${c + grade}i`, `${a + b} + ${c + grade}i`];
+      explanation = `Subtract real parts and subtract imaginary parts carefully: ${c}i - (-${grade}i) = ${c + grade}i.`;
+    } else if (variant === 9) {
+      const first = a;
+      const difference = c + 2;
+      prompt = `${unit}: An arithmetic sequence has a_1 = ${first} and a_${b} = ${first + (b - 1) * difference}. What is the common difference?`;
+      correct = `${difference}`;
+      distractors = [`${difference + 1}`, `${first}`, `${b}`];
+      explanation = `Subtract the first term from a_${b}, then divide by ${b - 1}.`;
+    } else if (variant === 10) {
+      const coefficient = c + 2;
+      prompt = `${unit}: If f(x) = ${coefficient}x - ${b} and g(x) = x^2 + ${c}, what is f(g(${grade - 8}))?`;
+      const inner = (grade - 8) ** 2 + c;
+      const answer = coefficient * inner - b;
+      correct = `${answer}`;
+      distractors = [`${inner}`, `${coefficient * (grade - 8) - b + c}`, `${answer + b}`];
+      explanation = `Evaluate g first, then substitute that output into f.`;
+    } else if (variant === 11) {
+      prompt = `${unit}: Which equation has no real solution?`;
+      correct = `x^2 + ${c} = 0`;
+      distractors = [`x^2 - ${c} = 0`, `x^2 - ${b}x = 0`, `(x - ${a})^2 = 0`];
+      explanation = `x^2 cannot equal a negative number in the real number system.`;
+    } else if (variant === 12) {
+      const factor = c + 1;
+      prompt = `${unit}: A quantity is multiplied by ${factor} each step. What model family fits best?`;
+      correct = "exponential";
+      distractors = ["linear", "absolute value", "constant"];
+      explanation = `Repeated multiplication by the same factor is exponential growth or decay.`;
+    } else if (variant === 13) {
+      prompt = `${unit}: What is the determinant of [[${a}, ${c}], [${b}, ${grade}]]?`;
+      correct = `${a * grade - b * c}`;
+      distractors = [`${a * grade + b * c}`, `${a + grade - b - c}`, `${a * c - b * grade}`];
+      explanation = `For a 2 by 2 matrix, determinant is ad - bc.`;
+    } else if (variant === 14) {
+      const exponent = (index % 3) + 2;
+      prompt = `${unit}: Rewrite x^${exponent}/x^${exponent - 1} using exponent rules.`;
+      correct = "x";
+      distractors = [`x^${exponent ** 2}`, "1", `x^${exponent}`];
+      explanation = `Dividing powers with the same base means subtract exponents: ${exponent} - ${exponent - 1} = 1, so the result is x.`;
+    } else {
+      const start = a;
+      const ratio = c;
+      prompt = `${unit}: A geometric sequence has a_1 = ${start} and ratio ${ratio}. Which expression gives a_n?`;
+      correct = `${start}(${ratio})^(n - 1)`;
+      distractors = [`${start} + ${ratio}(n - 1)`, `${ratio}(${start})^(n - 1)`, `${start}n + ${ratio}`];
+      explanation = `A geometric explicit formula is a_n = a_1 r^(n - 1).`;
     }
   } else {
     if (variant === 0) {
@@ -5498,11 +5602,53 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
       correct = `(x - ${b})/${a}`;
       distractors = [`${a}x - ${b}`, `(x + ${b})/${a}`, `${a}/(x - ${b})`];
       explanation = `Swap x and y, then solve for y.`;
-    } else {
+    } else if (variant === 7) {
       prompt = `${unit}: Which conic has one focus and one directrix?`;
       correct = "parabola";
       distractors = ["circle", "ellipse", "hyperbola"];
       explanation = `A parabola is the set of points equidistant from a focus and a directrix.`;
+    } else if (variant === 8) {
+      prompt = `${unit}: Solve 2cos(x) = 1 on 0 <= x < 2pi.`;
+      correct = "pi/3 and 5pi/3";
+      distractors = ["pi/6 and 5pi/6", "0 and pi", "pi/2 and 3pi/2"];
+      explanation = `cos(x) = 1/2 in Quadrants I and IV.`;
+    } else if (variant === 9) {
+      prompt = `${unit}: Which expression is equivalent to tan(x)cos(x), when cos(x) is not 0?`;
+      correct = "sin(x)";
+      distractors = ["cos(x)", "tan(x)", "1"];
+      explanation = `tan(x) = sin(x)/cos(x), so tan(x)cos(x) = sin(x).`;
+    } else if (variant === 10) {
+      const h = c;
+      const k = b;
+      prompt = `${unit}: A parabola has vertex (${h}, ${k}) and opens upward. Which feature is guaranteed?`;
+      correct = `The minimum value is ${k}.`;
+      distractors = [`The maximum value is ${k}.`, `The axis of symmetry is y = ${h}.`, `The x-intercepts are ${h} and ${k}.`];
+      explanation = `An upward-opening parabola has its minimum at the vertex.`;
+    } else if (variant === 11) {
+      prompt = `${unit}: What is the horizontal asymptote of f(x) = (${a})/${c}^x?`;
+      correct = "y = 0";
+      distractors = [`x = 0`, `y = ${a}`, `y = ${c}`];
+      explanation = `Exponential decay of this form approaches 0 but does not cross it.`;
+    } else if (variant === 12) {
+      prompt = `${unit}: Which equation represents an ellipse centered at the origin?`;
+      correct = `x^2/${a ** 2} + y^2/${b ** 2} = 1`;
+      distractors = [`x^2/${a ** 2} - y^2/${b ** 2} = 1`, `y = x^2 + ${c}`, `(x - ${a})^2 + (y - ${b})^2 = ${c}`];
+      explanation = `An ellipse in standard form adds the squared terms and sets them equal to 1.`;
+    } else if (variant === 13) {
+      prompt = `${unit}: If z = ${a} - ${c}i, what is its complex conjugate?`;
+      correct = `${a} + ${c}i`;
+      distractors = [`-${a} + ${c}i`, `${a} - ${c}i`, `-${a} - ${c}i`];
+      explanation = `The complex conjugate changes the sign of the imaginary part.`;
+    } else if (variant === 14) {
+      prompt = `${unit}: Which composition matches f(g(x)) when f(x) = x^2 - ${b} and g(x) = x + ${c}?`;
+      correct = `(x + ${c})^2 - ${b}`;
+      distractors = [`x^2 + ${c} - ${b}`, `(x^2 - ${b}) + ${c}`, `(x - ${c})^2 - ${b}`];
+      explanation = `Replace x in f(x) with the entire expression g(x).`;
+    } else {
+      prompt = `${unit}: Which statement best tests whether a function model is valid for a situation?`;
+      correct = "Check the domain, units, trend, and whether predictions stay within reasonable conditions.";
+      distractors = ["Use the model only because it has variables.", "Ignore the context after finding an equation.", "Choose the model with the longest formula."];
+      explanation = `A proficiency-level model answer must connect the algebra back to the situation.`;
     }
   }
 
