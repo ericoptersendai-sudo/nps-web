@@ -11,7 +11,7 @@ import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import type { Question } from "../data/curriculum";
 
-const TEST_LENGTH = 15;
+const TEST_LENGTH = 50;
 
 function getQuestionType(question: Question) {
   const text = `${question.prompt} ${question.explanation}`.toLowerCase();

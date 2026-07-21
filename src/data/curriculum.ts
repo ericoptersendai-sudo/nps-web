@@ -5266,52 +5266,78 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
     }
   } else if (grade === 10) {
     const angle = 30 + 5 * (index % 8);
-    if (variant === 0) {
+    const geometryVariant = patternIndex % 12;
+    if (geometryVariant === 0) {
       prompt = `${unit}: Two angles form a linear pair. One angle is ${angle} degrees. What is the other angle?`;
       correct = `${180 - angle} degrees`;
       distractors = [`${angle} degrees`, `${90 - angle} degrees`, `${180 + angle} degrees`];
       explanation = `A linear pair sums to 180 degrees.`;
-    } else if (variant === 1) {
+    } else if (geometryVariant === 1) {
       const radius = (index % 9) + 3;
       prompt = `${unit}: A circle has radius ${radius}. What is its area in terms of pi?`;
       correct = `${radius ** 2}pi`;
       distractors = [`${2 * radius}pi`, `${radius}pi`, `${2 * radius ** 2}pi`];
       explanation = `Circle area is pi r^2.`;
-    } else if (variant === 2) {
+    } else if (geometryVariant === 2) {
       const side = (index % 7) + 4;
       prompt = `${unit}: A cube has side length ${side}. What is its volume?`;
       correct = `${side ** 3} cubic units`;
       distractors = [`${side ** 2} cubic units`, `${6 * side ** 2} cubic units`, `${3 * side} cubic units`];
       explanation = `Cube volume is side^3.`;
-    } else if (variant === 3) {
+    } else if (geometryVariant === 3) {
       prompt = `${unit}: If two parallel lines are cut by a transversal, what is true about alternate interior angles?`;
       correct = "They are congruent.";
       distractors = ["They always add to 90 degrees.", "They are always vertical angles.", "They are never equal."];
       explanation = `Alternate interior angles formed by parallel lines are congruent.`;
-    } else if (variant === 4) {
+    } else if (geometryVariant === 4) {
       const opposite = (index % 6) + 3;
       const hyp = opposite * 2;
       prompt = `${unit}: In a right triangle, opposite = ${opposite} and hypotenuse = ${hyp}. What is sin(theta)?`;
       correct = `${opposite}/${hyp}`;
       distractors = [`${hyp}/${opposite}`, `${opposite}/${opposite + hyp}`, `${hyp - opposite}/${hyp}`];
       explanation = `Sine is opposite over hypotenuse.`;
-    } else if (variant === 5) {
+    } else if (geometryVariant === 5) {
       prompt = `${unit}: Which statement is a valid first step in a two-column proof?`;
       correct = "List the given information with its reason as Given.";
       distractors = ["Assume the conclusion is true without reason.", "Skip all definitions.", "Use a diagram as the only justification."];
       explanation = `Proofs begin from given information, definitions, postulates, or theorems.`;
-    } else if (variant === 6) {
+    } else if (geometryVariant === 6) {
       const scale = (index % 4) + 2;
       const side = (index % 5) + 5;
       prompt = `${unit}: A dilation has scale factor ${scale}. A side length ${side} becomes what length?`;
       correct = `${scale * side}`;
       distractors = [`${scale + side}`, `${side - scale}`, `${side}`];
       explanation = `Multiply the original length by the scale factor.`;
-    } else {
+    } else if (geometryVariant === 7) {
       prompt = `${unit}: Which transformation preserves angle measure and side length?`;
       correct = "rotation";
       distractors = ["dilation with scale factor 3", "vertical stretch", "non-uniform scaling"];
       explanation = `Rotations are rigid motions, so they preserve lengths and angle measures.`;
+    } else if (geometryVariant === 8) {
+      const firstAngle = 35 + (index % 5) * 5;
+      const secondAngle = 45 + (index % 4) * 5;
+      prompt = `${unit}: A triangle has angles ${firstAngle} degrees and ${secondAngle} degrees. What is the third angle?`;
+      correct = `${180 - firstAngle - secondAngle} degrees`;
+      distractors = [`${firstAngle + secondAngle} degrees`, `${180 - firstAngle} degrees`, `${180 - secondAngle} degrees`];
+      explanation = `The angles of a triangle sum to 180 degrees.`;
+    } else if (geometryVariant === 9) {
+      const radius = (index % 5) + 3;
+      const height = (index % 7) + 6;
+      prompt = `${unit}: A cylinder has radius ${radius} and height ${height}. What is its lateral surface area in terms of pi?`;
+      correct = `${2 * radius * height}pi`;
+      distractors = [`${radius * height}pi`, `${2 * radius ** 2}pi`, `${radius ** 2 * height}pi`];
+      explanation = `Lateral surface area of a cylinder is 2pi rh.`;
+    } else if (geometryVariant === 10) {
+      const radius = (index % 8) + 4;
+      prompt = `${unit}: A circle has radius ${radius}. What is its circumference in terms of pi?`;
+      correct = `${2 * radius}pi`;
+      distractors = [`${radius ** 2}pi`, `${radius}pi`, `${4 * radius}pi`];
+      explanation = `Circumference is 2pi r.`;
+    } else {
+      prompt = `${unit}: Which congruence reason proves triangles congruent using two sides and the included angle?`;
+      correct = "SAS";
+      distractors = ["SSA", "AAA", "HL for all triangles"];
+      explanation = `Side-Angle-Side uses two corresponding sides and the included angle.`;
     }
   } else if (grade === 11) {
     if (variant === 0) {
