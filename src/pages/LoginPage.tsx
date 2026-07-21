@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { LogIn, LogOut, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +9,7 @@ type Mode = "login" | "create";
 
 export function LoginPage() {
   const { currentUser, createAccount, signIn, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
@@ -19,6 +21,7 @@ export function LoginPage() {
     setMessage(result.message);
     if (result.ok) {
       setPasscode("");
+      navigate("/");
     }
   }
 

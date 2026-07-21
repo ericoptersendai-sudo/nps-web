@@ -14,6 +14,7 @@ type AuthContextValue = {
 
 const ACCOUNTS_KEY = "nps-local-accounts";
 const CURRENT_USER_KEY = "nps-current-user";
+const SESSION_USER_KEY = "nps-session-user";
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function readAccounts() {
@@ -30,7 +31,7 @@ function saveAccounts(accounts: Account[]) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem(CURRENT_USER_KEY));
+  const [currentUser, setCurrentUser] = useState(() => sessionStorage.getItem(SESSION_USER_KEY));
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -50,7 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         saveAccounts([...accounts, { username: cleanUsername, passcode }]);
-        localStorage.setItem(CURRENT_USER_KEY, cleanUsername);
+        localStorage.removeItem(CURRENT_USER_KEY);
+        sessionStorage.setItem(SESSION_USER_KEY, cleanUsername);
         setCurrentUser(cleanUsername);
         return { ok: true, message: "Account created. You are signed in." };
       },
@@ -61,12 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Username or passcode is incorrect." };
         }
 
-        localStorage.setItem(CURRENT_USER_KEY, account.username);
+        localStorage.removeItem(CURRENT_USER_KEY);
+        sessionStorage.setItem(SESSION_USER_KEY, account.username);
         setCurrentUser(account.username);
         return { ok: true, message: "Signed in." };
       },
       signOut() {
         localStorage.removeItem(CURRENT_USER_KEY);
+        sessionStorage.removeItem(SESSION_USER_KEY);
         setCurrentUser(null);
       }
     }),
