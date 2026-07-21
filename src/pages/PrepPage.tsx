@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, Lightbulb, PlayCircle, XCircle } from "lucide
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
 import { getCurriculum, getGradeLabel, getStudyQuestionBank } from "../data/curriculum";
+import type { Question } from "../data/curriculum";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useSettings } from "../context/SettingsContext";
@@ -11,6 +12,24 @@ import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { trackEvent } from "../utils/analytics";
+
+function skillLabel(question: Question) {
+  return question.prompt.split(":")[0] || question.subject;
+}
+
+function detailedSolutionSteps(question: Question) {
+  const correctAnswer = question.answers[question.correctIndex];
+  const isMath = question.subject === "Mathematics";
+  return [
+    `Skill being tested: ${skillLabel(question)}. Read the whole question first and identify exactly what it asks you to find.`,
+    isMath
+      ? "Set up the math before choosing an answer. Write the numbers, operation, equation, graph fact, or formula that matches the situation."
+      : "Look back at the wording of the question and match it to the strongest evidence, grammar rule, vocabulary clue, or reading strategy.",
+    question.explanation,
+    `The correct answer is: ${correctAnswer}.`,
+    "Check your work by comparing the correct answer with the other choices. The wrong choices are usually close because they use a common mistake, skip a step, or answer a different question."
+  ];
+}
 
 export function PrepPage() {
   const { grade } = useGrade();
@@ -148,7 +167,14 @@ export function PrepPage() {
                 {(showSolution || checkedAnswer) && (
                   <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600 dark:bg-white/5 dark:text-slate-300">
                     <p className="font-black text-slate-900 dark:text-white">{t("Solution")}</p>
-                    <p className="mt-2">{t(activeProblem.explanation)}</p>
+                    <div className="mt-3 grid gap-2">
+                      {detailedSolutionSteps(activeProblem).map((step, index) => (
+                        <div key={step} className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-950">
+                          <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--accent)]">{t(`Step ${index + 1}`)}</p>
+                          <p className="mt-1">{t(step)}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
