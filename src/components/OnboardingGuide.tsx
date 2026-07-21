@@ -2,6 +2,8 @@ import { BookOpenCheck, ClipboardCheck, GraduationCap, Settings, X } from "lucid
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
+import { translate } from "../utils/i18n";
 
 const GUIDE_KEY_PREFIX = "nps-guide-seen";
 
@@ -38,6 +40,8 @@ const guideSteps = [
 
 export function OnboardingGuide() {
   const { currentUser } = useAuth();
+  const { settings } = useSettings();
+  const t = (text: string) => translate(text, settings.language);
   const [seen, setSeen] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -62,11 +66,11 @@ export function OnboardingGuide() {
       <section className="w-full max-w-4xl rounded-lg border border-white/15 bg-white p-5 shadow-2xl dark:bg-slate-950">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">Welcome</p>
-            <h2 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">Here is how to use the app</h2>
-            <p className="mt-2 font-semibold text-slate-600 dark:text-slate-300">This guide only appears once for this account on this browser.</p>
+            <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t("Welcome")}</p>
+            <h2 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{t("Here is how to use the app")}</h2>
+            <p className="mt-2 font-semibold text-slate-600 dark:text-slate-300">{t("This guide only appears once for this account on this browser.")}</p>
           </div>
-          <button onClick={closeGuide} aria-label="Close guide" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-white/10 dark:text-slate-100">
+          <button onClick={closeGuide} aria-label={t("Close guide")} className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-white/10 dark:text-slate-100">
             <X size={20} />
           </button>
         </div>
@@ -81,10 +85,10 @@ export function OnboardingGuide() {
                     <Icon size={22} />
                   </span>
                   <div>
-                    <h3 className="text-lg font-black text-slate-950 dark:text-white">{step.title}</h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{step.body}</p>
+                    <h3 className="text-lg font-black text-slate-950 dark:text-white">{t(step.title)}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(step.body)}</p>
                     <Link onClick={closeGuide} to={step.to} className="mt-3 inline-flex rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-extrabold text-white">
-                      {step.action}
+                      {t(step.action)}
                     </Link>
                   </div>
                 </div>
