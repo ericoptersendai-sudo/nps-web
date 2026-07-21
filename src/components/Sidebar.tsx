@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
+import { useAuth } from "../context/AuthContext";
 
 const items = [
   { to: "/", label: "Home", icon: Home },
@@ -16,17 +17,19 @@ const items = [
 
 export function Sidebar() {
   const { settings } = useSettings();
+  const { currentUser } = useAuth();
   const t = (text: string) => translate(text, settings.language);
+  const visibleItems = currentUser ? items : items.filter((item) => item.to === "/login");
 
   return (
     <aside className="fixed inset-x-0 bottom-0 z-30 border-t border-white/12 bg-[var(--sidebar)] px-2 py-2 md:inset-y-0 md:left-0 md:right-auto md:w-64 md:border-r md:border-t-0 md:px-5 md:py-6">
       <div className="hidden md:block">
-        <Link aria-label="Go to home screen" to="/" className="block rounded-lg transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-white/70">
+        <Link aria-label={currentUser ? "Go to home screen" : "Go to login screen"} to={currentUser ? "/" : "/login"} className="block rounded-lg transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-white/70">
           <Logo />
         </Link>
       </div>
-      <nav className="grid grid-cols-7 gap-1 md:mt-10 md:grid-cols-1 md:gap-2">
-        {items.map((item) => {
+      <nav className={`${currentUser ? "grid-cols-7" : "grid-cols-1"} grid gap-1 md:mt-10 md:grid-cols-1 md:gap-2`}>
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
