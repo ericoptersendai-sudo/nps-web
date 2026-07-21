@@ -16,7 +16,7 @@ const TEST_LENGTH = 50;
 function getQuestionType(question: Question) {
   const text = `${question.prompt} ${question.explanation}`.toLowerCase();
 
-  if (text.includes("quadratic") || text.includes("x^2")) return "quadratic equations and functions";
+  if (text.includes("quadratic") || text.includes("x^2") || text.includes("parabolic") || text.includes("parabola")) return "quadratic equations and functions";
   if (text.includes("absolute value")) return "absolute value";
   if (
     text.includes("pythagorean") ||

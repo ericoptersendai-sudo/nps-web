@@ -3409,6 +3409,15 @@ const geometryMathLessons: Lesson[] = [
     miniQuiz: "Find the area of a sector with radius 8 and central angle 90 degrees."
   },
   {
+    unit: "G.Q Geometry: Quadratic Models",
+    title: "G.Q.1 Quadratic functions and equations in geometry",
+    standard: "Use quadratic functions and equations to model and solve geometric problems involving parabolas, area, intersections, and dimension constraints.",
+    explanation: "Connect quadratic expressions to geometry by factoring area models, identifying zeros as intercepts, finding vertices of parabolic models, and solving equations that come from geometric measurements.",
+    example: "A rectangle has area x^2 - 9x + 20. Which side lengths match the area expression?",
+    solution: ["Factor the quadratic expression.", "x^2 - 9x + 20 = (x - 4)(x - 5).", "The side lengths are x - 4 and x - 5."],
+    miniQuiz: "Solve x^2 - 10x + 24 = 0 and explain what the solutions could represent in a geometric model."
+  },
+  {
     unit: "G.RT Geometry: Right Triangle Trigonometry",
     title: "G.RT.1 Right triangles and trigonometry",
     standard: "Apply mathematical relationships of right triangles and trigonometric ratios to solve real-world and mathematical problems.",
@@ -5267,7 +5276,75 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
   } else if (grade === 10) {
     const angle = 30 + 5 * (index % 8);
     const geometryVariant = patternIndex % 12;
-    if (geometryVariant === 0) {
+    if (lesson.title.toLowerCase().includes("quadratic")) {
+      const rootOne = (index % 5) + 2;
+      const rootTwo = rootOne + (index % 4) + 2;
+      const sum = rootOne + rootTwo;
+      const product = rootOne * rootTwo;
+      const vertexX = (index % 6) + 1;
+      const vertexY = (index % 5) + 2;
+      if (geometryVariant === 0) {
+        prompt = `${unit}: A rectangle has area x^2 - ${sum}x + ${product}. Which side lengths match this area model?`;
+        correct = `x - ${rootOne} and x - ${rootTwo}`;
+        distractors = [`x + ${rootOne} and x + ${rootTwo}`, `x - ${sum} and x - ${product}`, `x + ${rootOne} and x - ${rootTwo}`];
+        explanation = `Factor the area model: x^2 - ${sum}x + ${product} = (x - ${rootOne})(x - ${rootTwo}).`;
+      } else if (geometryVariant === 1) {
+        prompt = `${unit}: The height of an arch is modeled by h(x) = -(x - ${vertexX})^2 + ${vertexY}. What is the vertex?`;
+        correct = `(${vertexX}, ${vertexY})`;
+        distractors = [`(-${vertexX}, ${vertexY})`, `(${vertexX}, -${vertexY})`, `(${vertexY}, ${vertexX})`];
+        explanation = `Vertex form y = a(x - h)^2 + k has vertex (h, k).`;
+      } else if (geometryVariant === 2) {
+        prompt = `${unit}: A parabolic arch has zeros at x = ${rootOne} and x = ${rootTwo}. Which factored equation could model the arch?`;
+        correct = `y = (x - ${rootOne})(x - ${rootTwo})`;
+        distractors = [`y = (x + ${rootOne})(x + ${rootTwo})`, `y = (x - ${sum})(x - ${product})`, `y = x^2 + ${product}`];
+        explanation = `Zeros at ${rootOne} and ${rootTwo} mean the factors are x - ${rootOne} and x - ${rootTwo}.`;
+      } else if (geometryVariant === 3) {
+        prompt = `${unit}: Solve x^2 - ${sum}x + ${product} = 0 to find where a quadratic geometry model meets the x-axis.`;
+        correct = `x = ${rootOne} or x = ${rootTwo}`;
+        distractors = [`x = -${rootOne} or x = -${rootTwo}`, `x = ${sum} or x = ${product}`, `x = ${rootOne + 1} or x = ${rootTwo + 1}`];
+        explanation = `Factor to (x - ${rootOne})(x - ${rootTwo}) = 0 and use the zero-product property.`;
+      } else if (geometryVariant === 4) {
+        prompt = `${unit}: A square has area x^2 - ${2 * rootOne}x + ${rootOne ** 2}. Which expression represents one side length?`;
+        correct = `x - ${rootOne}`;
+        distractors = [`x + ${rootOne}`, `x - ${2 * rootOne}`, `${rootOne}x`];
+        explanation = `The area is a perfect square trinomial: (x - ${rootOne})^2.`;
+      } else if (geometryVariant === 5) {
+        prompt = `${unit}: The path of a thrown ball is h(x) = -x^2 + ${sum}x. At which x-values is the height 0?`;
+        correct = `x = 0 and x = ${sum}`;
+        distractors = [`x = ${rootOne} and x = ${rootTwo}`, `x = -${sum} and x = ${sum}`, `x = 0 and x = ${product}`];
+        explanation = `Factor h(x) = x(-x + ${sum}); the zeros are x = 0 and x = ${sum}.`;
+      } else if (geometryVariant === 6) {
+        prompt = `${unit}: Which equation shows the axis of symmetry for y = (x - ${vertexX})^2 + ${vertexY}?`;
+        correct = `x = ${vertexX}`;
+        distractors = [`y = ${vertexY}`, `x = -${vertexX}`, `y = ${vertexX}`];
+        explanation = `In vertex form, the axis of symmetry is x = h.`;
+      } else if (geometryVariant === 7) {
+        prompt = `${unit}: A rectangle's side lengths are x and x + ${rootOne}. Its area is ${product}. Which equation models the area?`;
+        correct = `x(x + ${rootOne}) = ${product}`;
+        distractors = [`x + x + ${rootOne} = ${product}`, `x(x - ${rootOne}) = ${product}`, `2x + ${rootOne} = ${product}`];
+        explanation = `Rectangle area is length times width.`;
+      } else if (geometryVariant === 8) {
+        prompt = `${unit}: Which quadratic has x-intercepts at (${rootOne}, 0) and (${rootTwo}, 0)?`;
+        correct = `y = x^2 - ${sum}x + ${product}`;
+        distractors = [`y = x^2 + ${sum}x + ${product}`, `y = x^2 - ${product}x + ${sum}`, `y = x^2 + ${rootOne}x - ${rootTwo}`];
+        explanation = `Build the model from (x - ${rootOne})(x - ${rootTwo}).`;
+      } else if (geometryVariant === 9) {
+        prompt = `${unit}: A parabola opens downward and has vertex (${vertexX}, ${vertexY}). Which statement is true?`;
+        correct = `The maximum height is ${vertexY}.`;
+        distractors = [`The minimum height is ${vertexY}.`, `The axis of symmetry is y = ${vertexX}.`, `The vertex must be below the x-axis.`];
+        explanation = `A downward-opening parabola reaches its maximum at the vertex.`;
+      } else if (geometryVariant === 10) {
+        prompt = `${unit}: Factor x^2 - ${sum}x + ${product} to rewrite a geometric area expression.`;
+        correct = `(x - ${rootOne})(x - ${rootTwo})`;
+        distractors = [`(x + ${rootOne})(x + ${rootTwo})`, `(x - ${sum})(x - ${product})`, `(x + ${rootOne})(x - ${rootTwo})`];
+        explanation = `Find two numbers that multiply to ${product} and add to -${sum}.`;
+      } else {
+        prompt = `${unit}: Which feature of y = -(x - ${vertexX})^2 + ${vertexY} tells the horizontal location of the arch's highest point?`;
+        correct = `x = ${vertexX}`;
+        distractors = [`y = ${vertexY}`, `x = -${vertexX}`, `the coefficient -1`];
+        explanation = `The h-value in vertex form gives the horizontal coordinate of the vertex.`;
+      }
+    } else if (geometryVariant === 0) {
       prompt = `${unit}: Two angles form a linear pair. One angle is ${angle} degrees. What is the other angle?`;
       correct = `${180 - angle} degrees`;
       distractors = [`${angle} degrees`, `${90 - angle} degrees`, `${180 + angle} degrees`];
