@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Cookie } from "lucide-react";
-import { ANALYTICS_CONSENT_KEY, loadGoogleAnalytics, trackEvent } from "../utils/analytics";
+import { ANALYTICS_CONSENT_KEY, loadGoogleAnalytics, trackEvent, trackPageView } from "../utils/analytics";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
 
@@ -22,6 +22,7 @@ export function CookieConsent() {
     setChoice(value);
     if (value === "accepted") {
       loadGoogleAnalytics();
+      trackPageView(window.location.pathname);
       trackEvent("analytics_consent_accepted");
     }
   }
