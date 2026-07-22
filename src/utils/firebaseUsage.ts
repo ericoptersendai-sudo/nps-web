@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { addDoc, collection, doc, getFirestore, increment, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getFirestore, increment, serverTimestamp, setDoc } from "firebase/firestore";
 import { hasAnalyticsConsent } from "./analytics";
 
 const firebaseConfig = {
@@ -27,6 +27,10 @@ function getAnonymousVisitorId() {
   return generated;
 }
 
+function getAnonymousUserLabel(anonymousVisitorId: string) {
+  return `User ${anonymousVisitorId.slice(0, 6).toUpperCase()}`;
+}
+
 function safeDetails(details: RemoteUsageDetails) {
   return Object.fromEntries(
     Object.entries(details).filter(([, value]) => ["string", "number", "boolean"].includes(typeof value) || value === null)
@@ -38,20 +42,43 @@ export async function recordRemoteUsage(eventName: string, details: RemoteUsageD
 
   try {
     const anonymousVisitorId = getAnonymousVisitorId();
-    await addDoc(collection(db, "usageEvents"), {
-      eventName,
-      anonymousVisitorId,
-      details: safeDetails(details),
-      pagePath: window.location.pathname,
-      userAgent: navigator.userAgent,
-      createdAt: serverTimestamp()
-    });
+    const detailsToSave = safeDetails(details);
+    await setDoc(
+      doc(db, "usageUsers", anonymousVisitorId),
+      {
+        anonymousVisitorId,
+        userLabel: getAnonymousUserLabel(anonymousVisitorId),
+        lastEventName: eventName,
+        lastPagePath: window.location.pathname,
+        lastDetails: detailsToSave,
+        userAgent: navigator.userAgent,
+        eventsRecorded: increment(1),
+        [`eventCounts.${eventName}`]: increment(1),
+        totalStudySeconds: eventName === "study_time" && typeof details.seconds === "number" ? increment(details.seconds) : increment(0),
+        firstSeenAt: serverTimestamp(),
+        lastSeenAt: serverTimestamp()
+      },
+      { merge: true }
+    );
 
     await setDoc(
       doc(db, "usageStats", "totals"),
       {
         eventsRecorded: increment(1),
         [`eventCounts.${eventName}`]: increment(1),
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    await setDoc(
+      doc(db, "usageStats", "latestEvent"),
+      {
+        eventName,
+        anonymousVisitorId,
+        userLabel: getAnonymousUserLabel(anonymousVisitorId),
+        details: detailsToSave,
+        pagePath: window.location.pathname,
         updatedAt: serverTimestamp()
       },
       { merge: true }
