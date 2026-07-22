@@ -15,7 +15,7 @@ export function AppLayout() {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { recordActiveSeconds } = useProgress();
-  const { recordPageView, recordSiteOpen } = useUsageAnalytics();
+  const { recordPageView, recordSiteOpen, recordStudySeconds } = useUsageAnalytics();
   const [cookiesAccepted, setCookiesAccepted] = useState(() => hasAnalyticsConsent());
 
   useEffect(() => {
@@ -42,6 +42,7 @@ export function AppLayout() {
   useEffect(() => {
     if (!cookiesAccepted || !currentUser) return;
     let lastTick = Date.now();
+    let remoteStudySeconds = 0;
 
     const recordVisibleTime = () => {
       const now = Date.now();
@@ -49,6 +50,11 @@ export function AppLayout() {
       lastTick = now;
       if (document.visibilityState === "visible" && elapsedSeconds > 0) {
         recordActiveSeconds(elapsedSeconds);
+        remoteStudySeconds += elapsedSeconds;
+        if (remoteStudySeconds >= 60) {
+          recordStudySeconds(remoteStudySeconds);
+          remoteStudySeconds = 0;
+        }
       }
     };
 
@@ -57,10 +63,13 @@ export function AppLayout() {
 
     return () => {
       recordVisibleTime();
+      if (remoteStudySeconds > 0) {
+        recordStudySeconds(remoteStudySeconds);
+      }
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", recordVisibleTime);
     };
-  }, [cookiesAccepted, currentUser, recordActiveSeconds]);
+  }, [cookiesAccepted, currentUser, recordActiveSeconds, recordStudySeconds]);
 
   if (!cookiesAccepted) {
     return (

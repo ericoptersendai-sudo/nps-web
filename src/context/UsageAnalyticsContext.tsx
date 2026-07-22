@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { recordRemoteUsage } from "../utils/firebaseUsage";
 
 type UsageStats = {
   siteOpens: number;
@@ -23,6 +24,7 @@ type UsageAnalyticsContextValue = {
   recordGradeSelection: (grade: number) => void;
   recordSubjectSelection: (subject: string) => void;
   recordTestCompleted: (score: number, total: number) => void;
+  recordStudySeconds: (seconds: number) => void;
 };
 
 const defaultStats: UsageStats = {
@@ -87,6 +89,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [setStats]);
 
   const recordSiteOpen = useCallback(() => {
+    void recordRemoteUsage("site_open");
     updateStats("Opened website on this browser", (current) => ({
       ...current,
       siteOpens: current.siteOpens + 1
@@ -94,6 +97,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordAccountLogin = useCallback(() => {
+    void recordRemoteUsage("account_login");
     updateStats("Account logged in on this browser", (current) => ({
       ...current,
       accountLogins: current.accountLogins + 1
@@ -101,6 +105,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordAccountCreated = useCallback(() => {
+    void recordRemoteUsage("account_created");
     updateStats("Account created on this browser", (current) => ({
       ...current,
       accountsCreated: current.accountsCreated + 1
@@ -108,6 +113,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordPageView = useCallback((path: string) => {
+    void recordRemoteUsage("page_view", { path });
     updateStats(`Opened ${path === "/" ? "Home" : path.replace("/", "")}`, (current) => ({
       ...current,
       pageViews: incrementCount(current.pageViews, path)
@@ -115,6 +121,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordGradeSelection = useCallback((grade: number) => {
+    void recordRemoteUsage("grade_selected", { grade });
     updateStats(`Selected Grade ${grade}`, (current) => ({
       ...current,
       gradeSelections: incrementCount(current.gradeSelections, `Grade ${grade}`)
@@ -122,6 +129,7 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordSubjectSelection = useCallback((subject: string) => {
+    void recordRemoteUsage("subject_selected", { subject });
     updateStats(`Selected ${subject}`, (current) => ({
       ...current,
       subjectSelections: incrementCount(current.subjectSelections, subject)
@@ -130,12 +138,18 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
 
   const recordTestCompleted = useCallback((score: number, total: number) => {
     const band = scoreBand(score, total);
+    void recordRemoteUsage("test_completed", { score, total, band });
     updateStats(`Completed test in ${band} band`, (current) => ({
       ...current,
       testsCompleted: current.testsCompleted + 1,
       scoreBands: incrementCount(current.scoreBands, band)
     }));
   }, [updateStats]);
+
+  const recordStudySeconds = useCallback((seconds: number) => {
+    if (seconds <= 0) return;
+    void recordRemoteUsage("study_time", { seconds });
+  }, []);
 
   const value = useMemo<UsageAnalyticsContextValue>(
     () => ({
@@ -146,9 +160,10 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
       recordPageView,
       recordGradeSelection,
       recordSubjectSelection,
-      recordTestCompleted
+      recordTestCompleted,
+      recordStudySeconds
     }),
-    [recordAccountCreated, recordAccountLogin, recordGradeSelection, recordPageView, recordSiteOpen, recordSubjectSelection, recordTestCompleted, stats]
+    [recordAccountCreated, recordAccountLogin, recordGradeSelection, recordPageView, recordSiteOpen, recordStudySeconds, recordSubjectSelection, recordTestCompleted, stats]
   );
 
   return <UsageAnalyticsContext.Provider value={value}>{children}</UsageAnalyticsContext.Provider>;
