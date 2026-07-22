@@ -13,22 +13,47 @@ import { shuffle } from "../utils/random";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { trackEvent } from "../utils/analytics";
 
-function skillLabel(question: Question) {
-  return question.prompt.split(":")[0] || question.subject;
-}
-
 function detailedSolutionSteps(question: Question) {
   const correctAnswer = question.answers[question.correctIndex];
   const isMath = question.subject === "Mathematics";
-  return [
-    `Skill being tested: ${skillLabel(question)}. Read the whole question first and identify exactly what it asks you to find.`,
-    isMath
-      ? "Set up the math before choosing an answer. Write the numbers, operation, equation, graph fact, or formula that matches the situation."
-      : "Look back at the wording of the question and match it to the strongest evidence, grammar rule, vocabulary clue, or reading strategy.",
-    question.explanation,
-    `The correct answer is: ${correctAnswer}.`,
-    "Check your work by comparing the correct answer with the other choices. The wrong choices are usually close because they use a common mistake, skip a step, or answer a different question."
-  ];
+  const promptText = question.prompt.replace(/^[^:]+:\s*/, "");
+
+  if (!isMath) {
+    return [
+      `Focus on the exact wording: ${promptText}`,
+      "Eliminate choices that are too broad, too narrow, unsupported by the text, or only partly true.",
+      "Use the rule or evidence directly from the sentence/passage instead of choosing the answer that only sounds familiar.",
+      question.explanation,
+      `The best answer is ${correctAnswer} because it matches the evidence and avoids the trap choices.`
+    ];
+  }
+
+  const text = `${question.prompt} ${question.explanation}`.toLowerCase();
+  const steps = [`Start by naming what the problem is asking for: ${promptText}`];
+
+  if (text.includes("solve") || text.includes("equation") || text.includes("inequality") || text.includes(" x ") || text.includes("x =")) {
+    steps.push("Use inverse properties to isolate the variable. Move added or subtracted terms by doing the opposite operation to both sides; when a term is moved to the other side, its sign changes because you are adding the opposite.");
+    steps.push("After the variable term is alone, undo multiplication or division. Divide by the coefficient if the variable is being multiplied, or multiply if the variable is being divided.");
+  } else if (text.includes("slope") || text.includes("rate of change") || text.includes("y-intercept")) {
+    steps.push("For a linear relationship, separate the rate from the starting value. The slope is change in y divided by change in x, and the y-intercept is the value when x is 0.");
+  } else if (text.includes("quadratic") || text.includes("x^2") || text.includes("parabola") || text.includes("factor")) {
+    steps.push("For a quadratic, look for structure before calculating. If it factors, find two numbers that multiply to the constant term and add to the middle coefficient.");
+    steps.push("Use the zero-product property after factoring: if two factors multiply to 0, at least one factor must equal 0.");
+  } else if (text.includes("fraction") || text.includes("/") || text.includes("ratio") || text.includes("proportion")) {
+    steps.push("Keep the parts in the same order. For fractions or ratios, compare numerator-to-denominator relationships or use cross-products when the quantities are not already alike.");
+  } else if (text.includes("percent") || text.includes("%")) {
+    steps.push("Translate the percent before calculating. A percent is out of 100, so convert it to a decimal or fraction and then apply it to the whole amount.");
+  } else if (text.includes("area") || text.includes("volume") || text.includes("surface area") || text.includes("perimeter")) {
+    steps.push("Choose the formula that matches the measurement being asked for. Area uses square units, volume uses cubic units, and perimeter adds outside lengths.");
+  } else if (text.includes("probability")) {
+    steps.push("Count favorable outcomes and total outcomes separately. Probability is favorable outcomes divided by total possible outcomes.");
+  } else {
+    steps.push("Write the important numbers and operations in order before looking at the answer choices. This keeps a tempting answer choice from steering the work.");
+  }
+
+  steps.push(question.explanation);
+  steps.push(`This leads to ${correctAnswer}, so choose the answer choice that matches that result.`);
+  return steps;
 }
 
 export function PrepPage() {
@@ -121,7 +146,7 @@ export function PrepPage() {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t("Unlimited practice")}</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(`Solve one ${active.subject} problem at a time. Check the answer, read the solution, then move to another problem.`)}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(`Solve one ${active.subject} problem at a time. After choosing, read the worked reasoning before moving to another problem.`)}</p>
                 </div>
                 <p className="text-sm font-black text-emerald-600">{t(`Problem ${Math.min(practiceIndex + 1, practiceQueue.length || 1)}${practiceQueue.length ? ` of ${practiceQueue.length}` : ""}`)}</p>
               </div>
