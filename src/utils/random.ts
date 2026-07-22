@@ -16,3 +16,8 @@ export function formatMinutes(minutes: number) {
   const remaining = minutes % 60;
   return hours ? `${hours}h ${remaining}m` : `${remaining}m`;
 }
+
+export function formatStudyTime(seconds: number) {
+  if (seconds < 60) return `${seconds}s`;
+  return formatMinutes(Math.floor(seconds / 60));
+}

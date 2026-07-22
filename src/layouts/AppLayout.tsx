@@ -4,6 +4,8 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { CookieConsent } from "../components/CookieConsent";
 import { OnboardingGuide } from "../components/OnboardingGuide";
+import { useAuth } from "../context/AuthContext";
+import { useProgress } from "../context/ProgressContext";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { ANALYTICS_CONSENT_KEY, hasAnalyticsConsent, loadGoogleAnalytics, trackPageView } from "../utils/analytics";
 
@@ -11,6 +13,8 @@ const SESSION_OPEN_RECORDED_KEY = "nps-usage-open-recorded";
 
 export function AppLayout() {
   const location = useLocation();
+  const { currentUser } = useAuth();
+  const { recordActiveSeconds } = useProgress();
   const { recordPageView, recordSiteOpen } = useUsageAnalytics();
   const [cookiesAccepted, setCookiesAccepted] = useState(() => hasAnalyticsConsent());
 
@@ -34,6 +38,29 @@ export function AppLayout() {
     window.addEventListener("storage", updateConsent);
     return () => window.removeEventListener("storage", updateConsent);
   }, []);
+
+  useEffect(() => {
+    if (!cookiesAccepted || !currentUser) return;
+    let lastTick = Date.now();
+
+    const recordVisibleTime = () => {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - lastTick) / 1000);
+      lastTick = now;
+      if (document.visibilityState === "visible" && elapsedSeconds > 0) {
+        recordActiveSeconds(elapsedSeconds);
+      }
+    };
+
+    const timer = window.setInterval(recordVisibleTime, 10000);
+    document.addEventListener("visibilitychange", recordVisibleTime);
+
+    return () => {
+      recordVisibleTime();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", recordVisibleTime);
+    };
+  }, [cookiesAccepted, currentUser, recordActiveSeconds]);
 
   if (!cookiesAccepted) {
     return (

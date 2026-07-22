@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
@@ -6,6 +6,7 @@ export type Progress = {
   testsCompleted: number;
   averageScore: number;
   timeStudiedMinutes: number;
+  timeStudiedSeconds?: number;
   subjectsPracticed: string[];
   recentActivity: string[];
 };
@@ -13,15 +14,17 @@ export type Progress = {
 const defaultProgress: Progress = {
   testsCompleted: 0,
   averageScore: 0,
-  timeStudiedMinutes: 45,
-  subjectsPracticed: ["Mathematics", "English Language Arts"],
-  recentActivity: ["Opened Math practice", "Opened ELA practice", "Opened Prep Library"]
+  timeStudiedMinutes: 0,
+  timeStudiedSeconds: 0,
+  subjectsPracticed: [],
+  recentActivity: []
 };
 
 type ProgressContextValue = {
   progress: Progress;
   recordTest: (score: number, total: number) => void;
   recordSubject: (subject: string) => void;
+  recordActiveSeconds: (seconds: number) => void;
 };
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -29,27 +32,53 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useLocalStorage<Progress>("nps-progress", defaultProgress);
 
-  const recordTest = (score: number, total: number) => {
+  useEffect(() => {
+    const hasOldDemoProgress =
+      progress.testsCompleted === 0 &&
+      progress.averageScore === 0 &&
+      progress.timeStudiedMinutes === 45 &&
+      progress.subjectsPracticed.includes("Mathematics") &&
+      progress.subjectsPracticed.includes("English Language Arts");
+
+    if (hasOldDemoProgress) {
+      setProgress(defaultProgress);
+    }
+  }, [progress, setProgress]);
+
+  const recordActiveSeconds = useCallback((seconds: number) => {
+    if (seconds <= 0) return;
+    setProgress((current) => {
+      const nextSeconds = (current.timeStudiedSeconds ?? current.timeStudiedMinutes * 60) + seconds;
+      return {
+        ...current,
+        timeStudiedSeconds: nextSeconds,
+        timeStudiedMinutes: Math.floor(nextSeconds / 60)
+      };
+    });
+  }, [setProgress]);
+
+  const recordTest = useCallback((score: number, total: number) => {
     const percent = Math.round((score / total) * 100);
-    const completed = progress.testsCompleted + 1;
-    setProgress({
-      ...progress,
-      testsCompleted: completed,
-      averageScore: Math.round((progress.averageScore * progress.testsCompleted + percent) / completed),
-      recentActivity: [`Completed a test with ${percent}%`, ...progress.recentActivity].slice(0, 5)
+    setProgress((current) => {
+      const completed = current.testsCompleted + 1;
+      return {
+        ...current,
+        testsCompleted: completed,
+        averageScore: Math.round((current.averageScore * current.testsCompleted + percent) / completed),
+        recentActivity: [`Completed a test with ${percent}%`, ...current.recentActivity].slice(0, 5)
+      };
     });
-  };
+  }, [setProgress]);
 
-  const recordSubject = (subject: string) => {
-    setProgress({
-      ...progress,
-      timeStudiedMinutes: progress.timeStudiedMinutes + 10,
-      subjectsPracticed: Array.from(new Set([subject, ...progress.subjectsPracticed])).slice(0, 6),
-      recentActivity: [`Studied ${subject}`, ...progress.recentActivity].slice(0, 5)
-    });
-  };
+  const recordSubject = useCallback((subject: string) => {
+    setProgress((current) => ({
+      ...current,
+      subjectsPracticed: Array.from(new Set([subject, ...current.subjectsPracticed])).slice(0, 6),
+      recentActivity: [`Studied ${subject}`, ...current.recentActivity].slice(0, 5)
+    }));
+  }, [setProgress]);
 
-  return <ProgressContext.Provider value={{ progress, recordTest, recordSubject }}>{children}</ProgressContext.Provider>;
+  return <ProgressContext.Provider value={{ progress, recordTest, recordSubject, recordActiveSeconds }}>{children}</ProgressContext.Provider>;
 }
 
 export function useProgress() {

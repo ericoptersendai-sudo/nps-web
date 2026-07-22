@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
 import { getCurriculum, getGradeLabel } from "../data/curriculum";
-import { formatMinutes } from "../utils/random";
+import { formatStudyTime } from "../utils/random";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { StatCard } from "../components/StatCard";
@@ -56,7 +56,7 @@ export function HomePage() {
       <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={BookOpenCheck} label={t("Tests completed")} value={progress.testsCompleted} />
         <StatCard icon={BarChart3} label={t("Average score")} value={`${progress.averageScore}%`} />
-        <StatCard icon={Clock3} label={t("Time studied")} value={formatMinutes(progress.timeStudiedMinutes)} />
+        <StatCard icon={Clock3} label={t("Time studied")} value={formatStudyTime(progress.timeStudiedSeconds ?? progress.timeStudiedMinutes * 60)} />
         <StatCard icon={GraduationCap} label={t("Subjects practiced")} value={progress.subjectsPracticed.length} />
       </section>
 
