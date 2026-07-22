@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, Lightbulb, PlayCircle, XCircle } from "lucide
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
 import { getCurriculum, getGradeLabel, getStudyQuestionBank } from "../data/curriculum";
-import type { Question } from "../data/curriculum";
+import type { Lesson, Question } from "../data/curriculum";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useSettings } from "../context/SettingsContext";
@@ -12,6 +12,18 @@ import { translate } from "../utils/i18n";
 import { shuffle } from "../utils/random";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { trackEvent } from "../utils/analytics";
+
+function groupUnits(lessons: Lesson[]) {
+  return lessons.reduce<Array<{ unit: string; lessons: Lesson[] }>>((groups, lesson) => {
+    const existing = groups.find((group) => group.unit === lesson.unit);
+    if (existing) {
+      existing.lessons.push(lesson);
+      return groups;
+    }
+    groups.push({ unit: lesson.unit, lessons: [lesson] });
+    return groups;
+  }, []);
+}
 
 function detailedSolutionSteps(question: Question) {
   const correctAnswer = question.answers[question.correctIndex];
@@ -63,20 +75,37 @@ export function PrepPage() {
   const { recordSubjectSelection } = useUsageAnalytics();
   const t = (text: string) => translate(text, settings.language);
   const gradeLabel = getGradeLabel(grade);
-  const curriculum = getCurriculum(grade);
+  const curriculum = useMemo(() => getCurriculum(grade), [grade]);
   const [activeSubject, setActiveSubject] = useState(curriculum[0].subject);
   const [studyMode, setStudyMode] = useState(false);
+  const [activeUnit, setActiveUnit] = useState("");
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showSolution, setShowSolution] = useState(false);
   const [checkedAnswer, setCheckedAnswer] = useState(false);
   const active = curriculum.find((item) => item.subject === activeSubject) ?? curriculum[0];
+  const unitGroups = useMemo(() => groupUnits(active.lessons), [active.lessons]);
+  const selectedUnit = unitGroups.find((unit) => unit.unit === activeUnit) ?? unitGroups[0] ?? null;
+  const selectedLessons = selectedUnit?.lessons ?? [];
+  const selectedLessonTitles = useMemo(() => new Set(selectedLessons.map((lesson) => lesson.title)), [selectedLessons]);
   const practiceQuestions = useMemo(
-    () => getStudyQuestionBank().filter((question) => question.grade === grade && question.subject === activeSubject),
-    [grade, activeSubject]
+    () => getStudyQuestionBank().filter((question) => {
+      const lessonTitle = question.questionType?.split(" | ")[0] ?? "";
+      return question.grade === grade && question.subject === activeSubject && selectedLessonTitles.has(lessonTitle);
+    }),
+    [grade, activeSubject, selectedLessonTitles]
   );
   const [practiceQueue, setPracticeQueue] = useState(() => shuffle(practiceQuestions));
   const activeProblem = practiceQueue[practiceIndex] ?? null;
+
+  useEffect(() => {
+    setActiveUnit((currentUnit) => {
+      if (unitGroups.some((unit) => unit.unit === currentUnit)) {
+        return currentUnit;
+      }
+      return unitGroups[0]?.unit ?? "";
+    });
+  }, [unitGroups]);
 
   useEffect(() => {
     setPracticeQueue(shuffle(practiceQuestions));
@@ -109,6 +138,7 @@ export function PrepPage() {
                 recordSubjectSelection(item.subject);
                 trackEvent("prep_subject_selected", { subject: item.subject, grade });
                 setStudyMode(false);
+                setActiveUnit("");
                 setPracticeIndex(0);
                 resetProblem();
               }}
@@ -141,12 +171,42 @@ export function PrepPage() {
             </button>
           </div>
 
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950">
+            <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t("Choose a unit")}</p>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {unitGroups.map((unit) => {
+                const selected = selectedUnit?.unit === unit.unit;
+                return (
+                  <button
+                    key={unit.unit}
+                    onClick={() => {
+                      setActiveUnit(unit.unit);
+                      setPracticeIndex(0);
+                      resetProblem();
+                      trackEvent("prep_unit_selected", { subject: active.subject, unit: unit.unit, grade });
+                    }}
+                    className={`rounded-lg border p-3 text-left transition ${
+                      selected
+                        ? "border-[var(--accent)] bg-white text-[var(--accent)] shadow-sm dark:bg-slate-900"
+                        : "border-slate-200 bg-white/70 text-slate-700 hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100"
+                    }`}
+                  >
+                    <span className="block text-sm font-black">{t(unit.unit)}</span>
+                    <span className="mt-1 block text-xs font-bold text-slate-500 dark:text-slate-300">
+                      {unit.lessons.length} {t(unit.lessons.length === 1 ? "section" : "sections")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {studyMode && (
             <div className="mt-5 rounded-lg border border-[var(--accent)] bg-slate-50 p-4 dark:bg-slate-950">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t("Unlimited practice")}</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(`Solve one ${active.subject} problem at a time. After choosing, read the worked reasoning before moving to another problem.`)}</p>
+                  <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t("Unit practice")}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(`Solve one ${active.subject} problem from ${selectedUnit?.unit ?? "this unit"} at a time. After choosing, read the worked reasoning before moving to another problem.`)}</p>
                 </div>
                 <p className="text-sm font-black text-emerald-600">{t(`Problem ${Math.min(practiceIndex + 1, practiceQueue.length || 1)}${practiceQueue.length ? ` of ${practiceQueue.length}` : ""}`)}</p>
               </div>
@@ -238,13 +298,13 @@ export function PrepPage() {
           )}
 
           <div className="mt-5 grid gap-4">
-            {active.lessons.length === 0 && (
+            {selectedLessons.length === 0 && (
               <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center dark:border-white/10 dark:bg-slate-950">
                 <p className="text-xl font-black">{t("No lessons added yet.")}</p>
                 <p className="mt-2 font-semibold text-slate-600 dark:text-slate-300">{t("This subject is ready for the curriculum you want to add next.")}</p>
               </div>
             )}
-            {active.lessons.map((lesson, index) => (
+            {selectedLessons.map((lesson, index) => (
               <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} key={lesson.title} className="rounded-lg border border-slate-200 p-5 dark:border-white/10">
                 <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[var(--accent)]">{t(lesson.unit)}</p>
                 <h3 className="mt-2 text-xl font-black">{t("Section")} {index + 1}: {t(lesson.title)}</h3>
