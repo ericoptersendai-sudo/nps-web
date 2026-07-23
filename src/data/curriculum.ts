@@ -5049,7 +5049,7 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
   const a = (base % 19) + grade + 3;
   const b = (base % 13) + grade + 2;
   const c = (base % 9) + 2;
-  const unit = lesson.unit.split(" ")[0];
+  const unit = lesson.title;
   let prompt = "";
   let correct = "";
   let distractors: string[] = [];
@@ -5057,102 +5057,238 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
 
   if (grade <= 5) {
     if (variant === 0) {
-      const thousands = (base % 9) + 1;
-      const hundreds = ((base + 3) % 9) + 1;
-      const tens = ((base + 5) % 9) + 1;
-      const ones = ((base + 7) % 9) + 1;
-      const number = 1000 * thousands + 100 * hundreds + 10 * tens + ones;
-      prompt = `${unit}: What is the value of the hundreds digit in ${number}?`;
-      correct = `${hundreds * 100}`;
-      distractors = [`${hundreds}`, `${hundreds * 10}`, `${thousands * 1000}`];
-      explanation = `The hundreds digit is ${hundreds}, so its value is ${hundreds * 100}.`;
+      if (grade === 5) {
+        const numerator = (index % 8) + 3;
+        const denominator = numerator + 5;
+        const decimal = Number((numerator / denominator).toFixed(2));
+        prompt = `${unit}: Which decimal is closest to ${numerator}/${denominator}?`;
+        correct = `${decimal}`;
+        distractors = [`${Number((denominator / numerator).toFixed(2))}`, `${Number(((numerator + 1) / denominator).toFixed(2))}`, `${Number((numerator / (denominator + 2)).toFixed(2))}`];
+        explanation = `Divide the numerator by the denominator: ${numerator} / ${denominator} is about ${decimal}.`;
+      } else {
+        const placeLimit = grade === 4 ? 100000 : 10000;
+        const number = placeLimit * (((base + 1) % 8) + 1) + 1000 * (((base + 3) % 9) + 1) + 100 * (((base + 5) % 9) + 1) + 10 * (((base + 7) % 9) + 1) + (((base + 9) % 9) + 1);
+        const targetPlace = grade === 4 ? "hundred-thousands" : "ten-thousands";
+        const value = grade === 4 ? Math.floor(number / 100000) * 100000 : Math.floor(number / 10000) * 10000;
+        prompt = `${unit}: What is the value of the ${targetPlace} digit in ${number}?`;
+        correct = `${value}`;
+        distractors = [`${value / 10}`, `${value / 100}`, `${number - value}`];
+        explanation = `Use place value, not just the digit. The ${targetPlace} digit has value ${value}.`;
+      }
     } else if (variant === 1) {
-      const answer = a * c - b;
-      prompt = `${unit}: A class has ${a} bags with ${c} pencils in each bag. They give away ${b} pencils. How many pencils are left?`;
-      correct = `${answer}`;
-      distractors = [`${a + c - b}`, `${a * (c - b)}`, `${answer + b}`];
-      explanation = `Multiply first: ${a} x ${c} = ${a * c}. Then subtract ${b} to get ${answer}.`;
+      if (grade === 3) {
+        const answer = a * c - b;
+        prompt = `${unit}: A class has ${a} bags with ${c} pencils in each bag. They give away ${b} pencils. How many pencils are left?`;
+        correct = `${answer}`;
+        distractors = [`${a + c - b}`, `${a * (c - b)}`, `${answer + b}`];
+        explanation = `Multiply first: ${a} x ${c} = ${a * c}. Then subtract ${b} to get ${answer}.`;
+      } else if (grade === 4) {
+        const groups = (index % 8) + 12;
+        const total = groups * b;
+        prompt = `${unit}: A school orders ${total} notebooks in equal boxes of ${b}. How many boxes are needed?`;
+        correct = `${groups}`;
+        distractors = [`${groups + b}`, `${total - b}`, `${groups - 1}`];
+        explanation = `Divide the total by the number in each box: ${total} / ${b} = ${groups}.`;
+      } else {
+        const quotient = (index % 9) + 14;
+        const divisor = c + 5;
+        const total = quotient * divisor + b;
+        prompt = `${unit}: Divide ${total} by ${divisor}. What is the quotient with remainder?`;
+        correct = `${quotient} R ${b}`;
+        distractors = [`${quotient + 1} R ${b}`, `${quotient} R ${divisor}`, `${divisor} R ${b}`];
+        explanation = `${divisor} x ${quotient} = ${quotient * divisor}, and ${total} - ${quotient * divisor} = ${b}.`;
+      }
     } else if (variant === 2) {
       const numerator = (index % 5) + 1;
       const denominator = numerator + 4;
-      prompt = `${unit}: Which fraction shows ${numerator} shaded parts out of ${denominator} equal parts?`;
-      correct = `${numerator}/${denominator}`;
-      distractors = [`${denominator}/${numerator}`, `${numerator}/${denominator + numerator}`, `${denominator - numerator}/${denominator}`];
-      explanation = `The numerator is the shaded parts and the denominator is the total equal parts.`;
+      if (grade === 3) {
+        prompt = `${unit}: Which fraction shows ${numerator} shaded parts out of ${denominator} equal parts?`;
+        correct = `${numerator}/${denominator}`;
+        distractors = [`${denominator}/${numerator}`, `${numerator}/${denominator + numerator}`, `${denominator - numerator}/${denominator}`];
+        explanation = `The numerator is the shaded parts and the denominator is the total equal parts.`;
+      } else if (grade === 4) {
+        prompt = `${unit}: Which comparison is true?`;
+        correct = `${numerator}/${denominator} < ${numerator + 1}/${denominator}`;
+        distractors = [`${numerator}/${denominator} > ${numerator + 1}/${denominator}`, `${numerator}/${denominator} = ${numerator + 1}/${denominator}`, `${denominator}/${numerator} < ${numerator}/${denominator}`];
+        explanation = `The denominators match, so compare numerators. ${numerator} is less than ${numerator + 1}.`;
+      } else {
+        const otherDenominator = denominator + 2;
+        const sumNumerator = numerator * otherDenominator + (numerator + 1) * denominator;
+        const sumDenominator = denominator * otherDenominator;
+        prompt = `${unit}: Add ${numerator}/${denominator} + ${numerator + 1}/${otherDenominator}. Which unsimplified sum is correct?`;
+        correct = `${sumNumerator}/${sumDenominator}`;
+        distractors = [`${numerator + numerator + 1}/${denominator + otherDenominator}`, `${sumNumerator}/${denominator + otherDenominator}`, `${numerator * (numerator + 1)}/${sumDenominator}`];
+        explanation = `Use a common denominator of ${sumDenominator}, then add the adjusted numerators.`;
+      }
     } else if (variant === 3) {
       const cents = 25 * ((index % 3) + 1) + 10 * ((index % 4) + 1) + 5;
       const quarters = Math.floor(cents / 25);
       const dimes = (index % 4) + 1;
-      prompt = `${unit}: A student has ${countNoun(quarters, "quarter")}, ${countNoun(dimes, "dime")}, and 1 nickel. What is the total value?`;
-      correct = `${cents} cents`;
-      distractors = [`${cents - 5} cents`, `${cents + 10} cents`, `${cents + 25} cents`];
-      explanation = `Add the coin values: quarters, dimes, and nickel total ${cents} cents.`;
+      if (grade === 5) {
+        const priceOne = Number((a + cents / 100).toFixed(2));
+        const priceTwo = Number((c + dimes / 10).toFixed(2));
+        const total = Number((priceOne + priceTwo).toFixed(2));
+        prompt = `${unit}: A supply kit costs $${priceOne} and a notebook costs $${priceTwo}. What is the total cost?`;
+        correct = `$${total.toFixed(2)}`;
+        distractors = [`$${(total + 1).toFixed(2)}`, `$${(priceOne - priceTwo).toFixed(2)}`, `$${(total - 0.1).toFixed(2)}`];
+        explanation = `Line up decimal places and add dollars and cents: ${priceOne.toFixed(2)} + ${priceTwo.toFixed(2)} = ${total.toFixed(2)}.`;
+      } else {
+        prompt = `${unit}: A student has ${countNoun(quarters, "quarter")}, ${countNoun(dimes, "dime")}, and 1 nickel. What is the total value?`;
+        correct = `${cents} cents`;
+        distractors = [`${cents - 5} cents`, `${cents + 10} cents`, `${cents + 25} cents`];
+        explanation = `Add the coin values: quarters, dimes, and nickel total ${cents} cents.`;
+      }
     } else if (variant === 4) {
-      const answer = a + b + c;
-      prompt = `${unit}: What number comes next in the pattern ${a}, ${a + b}, ${a + b + c}, ___ if the next increase is ${b + c}?`;
-      correct = `${answer + b + c}`;
-      distractors = [`${answer + b}`, `${answer + c}`, `${answer * 2}`];
-      explanation = `Add the next increase, ${b + c}, to ${answer}.`;
+      const first = grade === 5 ? a * 2 : a;
+      const change = grade === 3 ? c : grade === 4 ? b - c : b + c;
+      prompt = `${unit}: A pattern starts ${first}, ${first + change}, ${first + 2 * change}, ${first + 3 * change}. What is the rule?`;
+      correct = `add ${change}`;
+      distractors = [`multiply by ${change}`, `subtract ${change}`, `add ${change + 1}`];
+      explanation = `Check each step. The same amount, ${change}, is added each time.`;
     } else if (variant === 5) {
       const width = (index % 8) + 3;
       const height = (index % 6) + 2;
-      const answer = width * height;
-      prompt = `${unit}: A rectangle is ${width} units long and ${height} units wide. What is its area?`;
-      correct = `${answer} square units`;
-      distractors = [`${width + height} square units`, `${2 * (width + height)} square units`, `${answer + width} square units`];
-      explanation = `Area is length x width, so ${width} x ${height} = ${answer}.`;
+      if (grade === 5) {
+        const depth = (index % 5) + 4;
+        const volume = width * height * depth;
+        prompt = `${unit}: A rectangular prism is ${width} by ${height} by ${depth}. What is its volume?`;
+        correct = `${volume} cubic units`;
+        distractors = [`${width * height} cubic units`, `${2 * (width + height + depth)} cubic units`, `${volume + depth} cubic units`];
+        explanation = `Volume is length x width x height: ${width} x ${height} x ${depth} = ${volume}.`;
+      } else if (grade === 4) {
+        prompt = `${unit}: Which shape has exactly ${width} sides?`;
+        correct = width === 3 ? "triangle" : width === 4 ? "quadrilateral" : width === 5 ? "pentagon" : width === 6 ? "hexagon" : "polygon";
+        distractors = ["sphere", "cone", "line segment"];
+        explanation = `Use the number of sides to classify the polygon.`;
+      } else {
+        const answer = width * height;
+        prompt = `${unit}: A rectangle is ${width} units long and ${height} units wide. What is its area?`;
+        correct = `${answer} square units`;
+        distractors = [`${width + height} square units`, `${2 * (width + height)} square units`, `${answer + width} square units`];
+        explanation = `Area is length x width, so ${width} x ${height} = ${answer}.`;
+      }
     } else if (variant === 6) {
       const startHour = (index % 7) + 1;
       const minutes = 15 + 5 * (index % 8);
-      prompt = `${unit}: A practice session starts at ${startHour}:00 and lasts ${minutes} minutes. What time does it end?`;
-      correct = `${startHour}:${String(minutes).padStart(2, "0")}`;
-      distractors = [`${startHour + 1}:00`, `${startHour}:${String(minutes + 5).padStart(2, "0")}`, `${startHour - 1 || 12}:${String(minutes).padStart(2, "0")}`];
-      explanation = `Add ${minutes} minutes to ${startHour}:00.`;
+      if (grade === 4) {
+        prompt = `${unit}: A practice session starts at ${startHour}:35 and lasts ${minutes} minutes. What time does it end?`;
+        const totalMinutes = 35 + minutes;
+        const endHour = startHour + Math.floor(totalMinutes / 60);
+        const endMinute = totalMinutes % 60;
+        correct = `${endHour}:${String(endMinute).padStart(2, "0")}`;
+        distractors = [`${startHour}:${String(totalMinutes).padStart(2, "0")}`, `${endHour + 1}:${String(endMinute).padStart(2, "0")}`, `${startHour}:${String(endMinute).padStart(2, "0")}`];
+        explanation = `Add minutes across the hour: 35 + ${minutes} = ${totalMinutes} minutes, or ${Math.floor(totalMinutes / 60)} hour and ${endMinute} minutes.`;
+      } else if (grade === 5) {
+        const feet = (index % 8) + 3;
+        prompt = `${unit}: Convert ${feet} feet to inches.`;
+        correct = `${feet * 12} inches`;
+        distractors = [`${feet + 12} inches`, `${feet * 10} inches`, `${feet * 6} inches`];
+        explanation = `Each foot has 12 inches, so multiply ${feet} by 12.`;
+      } else {
+        prompt = `${unit}: A practice session starts at ${startHour}:00 and lasts ${minutes} minutes. What time does it end?`;
+        correct = `${startHour}:${String(minutes).padStart(2, "0")}`;
+        distractors = [`${startHour + 1}:00`, `${startHour}:${String(minutes + 5).padStart(2, "0")}`, `${startHour - 1 || 12}:${String(minutes).padStart(2, "0")}`];
+        explanation = `Add ${minutes} minutes to ${startHour}:00.`;
+      }
     } else {
       const values = [a, b, c, grade + (index % 6)];
       const sorted = [...values].sort((left, right) => left - right);
       const median = (sorted[1] + sorted[2]) / 2;
-      prompt = `${unit}: What is the median of ${values.join(", ")}?`;
-      correct = `${median}`;
-      distractors = [`${sorted[0]}`, `${sorted[3]}`, `${values.reduce((sum, value) => sum + value, 0)}`];
-      explanation = `Order the values as ${sorted.join(", ")} and average the two middle values.`;
+      if (grade === 3) {
+        prompt = `${unit}: A bar graph shows ${a} votes for soccer and ${b} votes for basketball. How many more votes did soccer get?`;
+        correct = `${a - b}`;
+        distractors = [`${a + b}`, `${b - c}`, `${a - b + 1}`];
+        explanation = `Compare categories by subtracting: ${a} - ${b} = ${a - b}.`;
+      } else if (grade === 4) {
+        prompt = `${unit}: A line plot has values ${values.join(", ")}. What is the median?`;
+        correct = `${median}`;
+        distractors = [`${sorted[0]}`, `${sorted[3]}`, `${values.reduce((sum, value) => sum + value, 0)}`];
+        explanation = `Order the values as ${sorted.join(", ")} and average the two middle values.`;
+      } else {
+        const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+        prompt = `${unit}: What is the mean of ${values.join(", ")}?`;
+        correct = `${mean}`;
+        distractors = [`${median}`, `${Math.max(...values)}`, `${values.reduce((sum, value) => sum + value, 0)}`];
+        explanation = `Add all values and divide by ${values.length}.`;
+      }
     }
   } else if (grade <= 7) {
     if (variant === 0) {
-      const answer = a - b - c;
-      prompt = `${unit}: Evaluate ${a} - ${b} - ${c}.`;
-      correct = `${answer}`;
-      distractors = [`${a - (b + c) + 1}`, `${a + b - c}`, `${b + c - a}`];
-      explanation = `Subtract from left to right: ${a} - ${b} - ${c} = ${answer}.`;
+      if (grade === 7) {
+        const answer = -a + b - c;
+        prompt = `${unit}: Evaluate -${a} + ${b} - ${c}.`;
+        correct = `${answer}`;
+        distractors = [`${a + b - c}`, `${answer + c}`, `${-answer}`];
+        explanation = `Use integer rules carefully: combine -${a} + ${b}, then subtract ${c}.`;
+      } else {
+        const answer = a - b - c;
+        prompt = `${unit}: Evaluate ${a} - ${b} - ${c}.`;
+        correct = `${answer}`;
+        distractors = [`${a - (b + c) + 1}`, `${a + b - c}`, `${b + c - a}`];
+        explanation = `Subtract from left to right: ${a} - ${b} - ${c} = ${answer}.`;
+      }
     } else if (variant === 1) {
       const total = a * 4;
       const part = a;
-      prompt = `${unit}: A recipe uses ${part} cups of oats for ${total} cups of mix. What percent of the mix is oats?`;
-      correct = "25%";
-      distractors = ["20%", "40%", "75%"];
-      explanation = `${part}/${total} = 1/4, and 1/4 = 25%.`;
+      if (grade === 7) {
+        const original = total;
+        const scaled = total + part;
+        prompt = `${unit}: A value increases from ${original} to ${scaled}. What percent increase is this?`;
+        correct = "25%";
+        distractors = ["20%", "40%", "75%"];
+        explanation = `The increase is ${part}. Divide by the original amount: ${part}/${original} = 1/4 = 25%.`;
+      } else {
+        prompt = `${unit}: A recipe uses ${part} cups of oats for ${total} cups of mix. What percent of the mix is oats?`;
+        correct = "25%";
+        distractors = ["20%", "40%", "75%"];
+        explanation = `${part}/${total} = 1/4, and 1/4 = 25%.`;
+      }
     } else if (variant === 2) {
       const x = (index % 8) + 3;
       const total = b * x + c;
-      prompt = `${unit}: Solve ${b}x + ${c} = ${total}.`;
-      correct = `${x}`;
-      distractors = [`${x + 1}`, `${x - 1}`, `${total - c}`];
-      explanation = `Subtract ${c}, then divide by ${b}: x = ${x}.`;
+      if (grade === 7) {
+        prompt = `${unit}: Solve ${b}x - ${c} <= ${total - 2 * c}.`;
+        correct = `x <= ${x}`;
+        distractors = [`x >= ${x}`, `x <= ${x + 1}`, `x = ${total - c}`];
+        explanation = `Add ${c} to both sides, then divide by positive ${b}; the inequality direction stays the same.`;
+      } else {
+        prompt = `${unit}: Solve ${b}x + ${c} = ${total}.`;
+        correct = `${x}`;
+        distractors = [`${x + 1}`, `${x - 1}`, `${total - c}`];
+        explanation = `Subtract ${c}, then divide by ${b}: x = ${x}.`;
+      }
     } else if (variant === 3) {
       const favorable = (index % 5) + 1;
       const total = favorable + 5;
-      prompt = `${unit}: A bag has ${favorable} blue tiles and ${total - favorable} red tiles. What is the probability of choosing blue?`;
-      correct = `${favorable}/${total}`;
-      distractors = [`${total - favorable}/${total}`, `${favorable}/${total - favorable}`, `${total}/${favorable}`];
-      explanation = `Probability is favorable outcomes over total outcomes.`;
+      if (grade === 7) {
+        const trials = total * 12;
+        prompt = `${unit}: If the probability of blue is ${favorable}/${total}, about how many blue results should occur in ${trials} trials?`;
+        correct = `${favorable * 12}`;
+        distractors = [`${total * 12}`, `${favorable + 12}`, `${(total - favorable) * 12}`];
+        explanation = `Use proportional reasoning: ${trials} is ${12} groups of ${total}, so multiply favorable outcomes by ${12}.`;
+      } else {
+        prompt = `${unit}: A bag has ${favorable} blue tiles and ${total - favorable} red tiles. What is the probability of choosing blue?`;
+        correct = `${favorable}/${total}`;
+        distractors = [`${total - favorable}/${total}`, `${favorable}/${total - favorable}`, `${total}/${favorable}`];
+        explanation = `Probability is favorable outcomes over total outcomes.`;
+      }
     } else if (variant === 4) {
       const baseLength = (index % 10) + 6;
       const height = (index % 7) + 4;
       const answer = (baseLength * height) / 2;
-      prompt = `${unit}: A triangle has base ${baseLength} and height ${height}. What is its area?`;
-      correct = `${answer} square units`;
-      distractors = [`${baseLength * height} square units`, `${baseLength + height} square units`, `${2 * (baseLength + height)} square units`];
-      explanation = `Triangle area is one-half base x height: (${baseLength} x ${height}) / 2 = ${answer}.`;
+      if (grade === 7) {
+        const top = baseLength - 2;
+        const trapezoidArea = ((baseLength + top) * height) / 2;
+        prompt = `${unit}: A trapezoid has bases ${baseLength} and ${top} with height ${height}. What is its area?`;
+        correct = `${trapezoidArea} square units`;
+        distractors = [`${baseLength * height} square units`, `${top * height} square units`, `${2 * trapezoidArea} square units`];
+        explanation = `Trapezoid area is one-half the sum of the bases times height.`;
+      } else {
+        prompt = `${unit}: A triangle has base ${baseLength} and height ${height}. What is its area?`;
+        correct = `${answer} square units`;
+        distractors = [`${baseLength * height} square units`, `${baseLength + height} square units`, `${2 * (baseLength + height)} square units`];
+        explanation = `Triangle area is one-half base x height: (${baseLength} x ${height}) / 2 = ${answer}.`;
+      }
     } else if (variant === 5) {
       const rate = (index % 6) + 2;
       prompt = `${unit}: If y = ${rate}x, what is y when x = ${c}?`;
@@ -5671,7 +5807,7 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
 
 function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
   const variant = (patternIndex + (bankKind === "test" ? 4 : 0)) % 8;
-  const unit = lesson.unit.split(" ")[0];
+  const unit = lesson.title;
   let prompt = "";
   let correct = "";
   let distractors: string[] = [];
