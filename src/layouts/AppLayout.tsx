@@ -5,6 +5,7 @@ import { Sidebar } from "../components/Sidebar";
 import { CookieConsent } from "../components/CookieConsent";
 import { OnboardingGuide } from "../components/OnboardingGuide";
 import { useAuth } from "../context/AuthContext";
+import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { ANALYTICS_CONSENT_KEY, hasAnalyticsConsent, loadGoogleAnalytics, trackPageView } from "../utils/analytics";
@@ -21,6 +22,7 @@ function isStudyPath(pathname: string) {
 export function AppLayout() {
   const location = useLocation();
   const { currentUser } = useAuth();
+  const { grade } = useGrade();
   const { recordActiveSeconds } = useProgress();
   const { recordPageView, recordSiteOpen, recordStudySeconds } = useUsageAnalytics();
   const [cookiesAccepted, setCookiesAccepted] = useState(() => hasAnalyticsConsent());
@@ -36,9 +38,9 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!cookiesAccepted) return;
-    recordPageView(location.pathname);
+    recordPageView(location.pathname, grade);
     trackPageView(location.pathname);
-  }, [cookiesAccepted, location.pathname, recordPageView]);
+  }, [cookiesAccepted, grade, location.pathname, recordPageView]);
 
   useEffect(() => {
     const updateConsent = () => setCookiesAccepted(localStorage.getItem(ANALYTICS_CONSENT_KEY) === "accepted");
@@ -65,7 +67,7 @@ export function AppLayout() {
         recordActiveSeconds(elapsedSeconds);
         remoteStudySeconds += elapsedSeconds;
         if (remoteStudySeconds >= 60) {
-          recordStudySeconds(remoteStudySeconds);
+          recordStudySeconds(remoteStudySeconds, grade);
           remoteStudySeconds = 0;
         }
       }
@@ -81,7 +83,7 @@ export function AppLayout() {
     return () => {
       recordVisibleTime();
       if (remoteStudySeconds > 0) {
-        recordStudySeconds(remoteStudySeconds);
+        recordStudySeconds(remoteStudySeconds, grade);
       }
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", recordVisibleTime);
@@ -90,7 +92,7 @@ export function AppLayout() {
       window.removeEventListener("scroll", markActive);
       window.removeEventListener("touchstart", markActive);
     };
-  }, [cookiesAccepted, currentUser, location.pathname, recordActiveSeconds, recordStudySeconds]);
+  }, [cookiesAccepted, currentUser, grade, location.pathname, recordActiveSeconds, recordStudySeconds]);
 
   if (!cookiesAccepted) {
     return (

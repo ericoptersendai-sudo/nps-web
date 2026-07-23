@@ -21,11 +21,11 @@ type UsageAnalyticsContextValue = {
   recordSiteOpen: () => void;
   recordAccountLogin: () => void;
   recordAccountCreated: () => void;
-  recordPageView: (path: string) => void;
+  recordPageView: (path: string, grade?: number) => void;
   recordGradeSelection: (grade: number) => void;
-  recordSubjectSelection: (subject: string) => void;
-  recordTestCompleted: (score: number, total: number) => void;
-  recordStudySeconds: (seconds: number) => void;
+  recordSubjectSelection: (subject: string, grade?: number) => void;
+  recordTestCompleted: (score: number, total: number, grade?: number, subject?: string) => void;
+  recordStudySeconds: (seconds: number, grade?: number) => void;
 };
 
 const defaultStats: UsageStats = {
@@ -115,8 +115,8 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateStats]);
 
-  const recordPageView = useCallback((path: string) => {
-    void recordRemoteUsage("page_view", { path });
+  const recordPageView = useCallback((path: string, grade?: number) => {
+    void recordRemoteUsage("page_view", { path, grade: grade ?? null });
     updateStats(`Opened ${path === "/" ? "Home" : path.replace("/", "")}`, (current) => ({
       ...current,
       pageViews: incrementCount(current.pageViews, path)
@@ -131,17 +131,17 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateStats]);
 
-  const recordSubjectSelection = useCallback((subject: string) => {
-    void recordRemoteUsage("subject_selected", { subject });
+  const recordSubjectSelection = useCallback((subject: string, grade?: number) => {
+    void recordRemoteUsage("subject_selected", { subject, grade: grade ?? null });
     updateStats(`Selected ${subject}`, (current) => ({
       ...current,
       subjectSelections: incrementCount(current.subjectSelections, subject)
     }));
   }, [updateStats]);
 
-  const recordTestCompleted = useCallback((score: number, total: number) => {
+  const recordTestCompleted = useCallback((score: number, total: number, grade?: number, subject?: string) => {
     const band = scoreBand(score, total);
-    void recordRemoteUsage("test_completed", { score, total, band });
+    void recordRemoteUsage("test_completed", { score, total, band, grade: grade ?? null, subject: subject ?? null });
     updateStats(`Completed test in ${band} band`, (current) => ({
       ...current,
       testsCompleted: current.testsCompleted + 1,
@@ -149,10 +149,10 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
     }));
   }, [updateStats]);
 
-  const recordStudySeconds = useCallback((seconds: number) => {
+  const recordStudySeconds = useCallback((seconds: number, grade?: number) => {
     const safeSeconds = Math.floor(seconds);
     if (safeSeconds <= 0) return;
-    void recordRemoteUsage("study_time", { seconds: safeSeconds });
+    void recordRemoteUsage("study_time", { seconds: safeSeconds, grade: grade ?? null });
     updateStats(`Studied for ${safeSeconds} seconds`, (current) => ({
       ...current,
       totalStudySeconds: current.totalStudySeconds + safeSeconds

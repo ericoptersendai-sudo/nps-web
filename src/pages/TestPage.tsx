@@ -292,7 +292,7 @@ export function TestPage() {
     if (!validQuestions.length) return;
     setSubmitted(true);
     recordTest(score, validQuestions.length);
-    recordTestCompleted(score, validQuestions.length);
+    recordTestCompleted(score, validQuestions.length, grade, selectedSubject);
     trackEvent("test_completed", {
       grade,
       subject: selectedSubject,
@@ -302,7 +302,7 @@ export function TestPage() {
 
   function chooseSubject(subject: Subject) {
     setSelectedSubject(subject);
-    recordSubjectSelection(subject);
+    recordSubjectSelection(subject, grade);
     trackEvent("test_subject_selected", { subject, grade });
   }
 

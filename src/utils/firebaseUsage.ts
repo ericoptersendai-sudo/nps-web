@@ -37,12 +37,17 @@ function safeDetails(details: RemoteUsageDetails) {
   );
 }
 
+function lastSelectedGrade(details: RemoteUsageDetails) {
+  return typeof details.grade === "number" ? details.grade : null;
+}
+
 export async function recordRemoteUsage(eventName: string, details: RemoteUsageDetails = {}) {
   if (!hasAnalyticsConsent()) return;
 
   try {
     const anonymousVisitorId = getAnonymousVisitorId();
     const detailsToSave = safeDetails(details);
+    const selectedGrade = lastSelectedGrade(details);
     await setDoc(
       doc(db, "usageUsers", anonymousVisitorId),
       {
@@ -51,6 +56,7 @@ export async function recordRemoteUsage(eventName: string, details: RemoteUsageD
         lastEventName: eventName,
         lastPagePath: window.location.pathname,
         lastDetails: detailsToSave,
+        ...(selectedGrade === null ? {} : { lastSelectedGrade: selectedGrade }),
         userAgent: navigator.userAgent,
         eventsRecorded: increment(1),
         [`eventCounts.${eventName}`]: increment(1),

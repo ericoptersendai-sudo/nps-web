@@ -135,7 +135,7 @@ export function PrepPage() {
               onClick={() => {
                 setActiveSubject(item.subject);
                 recordSubject(item.subject);
-                recordSubjectSelection(item.subject);
+                recordSubjectSelection(item.subject, grade);
                 trackEvent("prep_subject_selected", { subject: item.subject, grade });
                 setStudyMode(false);
                 setActiveUnit("");
