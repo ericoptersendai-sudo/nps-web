@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Calculator as CalculatorIcon, CheckCircle2, PenLine, RotateCcw, Trash2, XCircle } from "lucide-react";
 import { useGrade } from "../context/GradeContext";
 import { useProgress } from "../context/ProgressContext";
 import { getCurriculum, getGradeLabel, getTestQuestionBank } from "../data/curriculum";
@@ -12,8 +12,128 @@ import { shuffle } from "../utils/random";
 import type { Question } from "../data/curriculum";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { trackEvent } from "../utils/analytics";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 const TEST_LENGTH = 50;
+
+function CalculatorTool({ t }: { t: (text: string) => string }) {
+  const [expression, setExpression] = useState("");
+  const [result, setResult] = useState("");
+
+  function calculate() {
+    const normalized = expression.replace(/\^/g, "**");
+    if (!/^[\d+\-*/().\s*]+$/.test(normalized)) {
+      setResult(t("Use numbers and math symbols only."));
+      return;
+    }
+    try {
+      const value = Function(`"use strict"; return (${normalized})`)();
+      setResult(Number.isFinite(value) ? String(Math.round(value * 1000000) / 1000000) : t("Check the expression."));
+    } catch {
+      setResult(t("Check the expression."));
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950">
+      <div className="flex items-center gap-2 font-black">
+        <CalculatorIcon size={18} className="text-[var(--accent)]" />
+        {t("Calculator")}
+      </div>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={expression}
+          onChange={(event) => setExpression(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") calculate();
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 font-bold outline-none focus:border-[var(--accent)] dark:border-white/10 dark:bg-slate-900"
+          placeholder="(12 + 8) / 4"
+          inputMode="decimal"
+        />
+        <button onClick={calculate} className="rounded-lg bg-[var(--accent)] px-4 py-2 font-extrabold text-white">
+          {t("Calculate")}
+        </button>
+      </div>
+      {result && <p className="mt-2 rounded-lg bg-white px-3 py-2 font-black text-slate-800 dark:bg-slate-900 dark:text-white">{result}</p>}
+    </div>
+  );
+}
+
+function ScratchPad({ t }: { t: (text: string) => string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+
+  function point(event: PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((event.clientY - rect.top) / rect.height) * canvas.height
+    };
+  }
+
+  function startDrawing(event: PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    drawingRef.current = true;
+    canvas.setPointerCapture(event.pointerId);
+    const { x, y } = point(event);
+    context.beginPath();
+    context.moveTo(x, y);
+  }
+
+  function draw(event: PointerEvent<HTMLCanvasElement>) {
+    if (!drawingRef.current) return;
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
+    const { x, y } = point(event);
+    context.lineTo(x, y);
+    context.lineWidth = 4;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#0f172a";
+    context.stroke();
+  }
+
+  function stopDrawing(event: PointerEvent<HTMLCanvasElement>) {
+    drawingRef.current = false;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function clearCanvas() {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 font-black">
+          <PenLine size={18} className="text-[var(--accent)]" />
+          {t("Scratch pad")}
+        </div>
+        <button onClick={clearCanvas} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-extrabold dark:border-white/10">
+          <Trash2 size={16} /> {t("Clear")}
+        </button>
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={900}
+        height={320}
+        onPointerDown={startDrawing}
+        onPointerMove={draw}
+        onPointerUp={stopDrawing}
+        onPointerCancel={stopDrawing}
+        className="mt-3 h-64 w-full touch-none rounded-lg border border-slate-200 bg-white dark:border-white/10"
+      />
+    </div>
+  );
+}
 
 function getQuestionType(question: Question) {
   const text = `${question.prompt} ${question.explanation}`.toLowerCase();
@@ -132,16 +252,16 @@ export function TestPage() {
   const t = (text: string) => translate(text, settings.language);
   const gradeLabel = getGradeLabel(grade);
   const subjects = useMemo(() => getCurriculum(grade), [grade]);
-  const [selectedSubject, setSelectedSubject] = useState<Subject>(subjects[0].subject);
+  const [selectedSubject, setSelectedSubject] = useLocalStorage<Subject>("nps-test-selected-subject", subjects[0].subject);
   const questionBank = useMemo(
     () => getTestQuestionBank().filter((question) => question.grade === grade && question.subject === selectedSubject),
     [grade, selectedSubject]
   );
-  const [usedQuestionIds, setUsedQuestionIds] = useState<string[]>([]);
-  const [questions, setQuestions] = useState(() => buildRandomTest(questionBank, []));
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [usedQuestionIds, setUsedQuestionIds] = useLocalStorage<string[]>("nps-test-used-question-ids", []);
+  const [questions, setQuestions] = useLocalStorage<Question[]>("nps-test-current-questions", buildRandomTest(questionBank, []));
+  const [current, setCurrent] = useLocalStorage("nps-test-current-index", 0);
+  const [answers, setAnswers] = useLocalStorage<Record<string, number>>("nps-test-answers", {});
+  const [submitted, setSubmitted] = useLocalStorage("nps-test-submitted", false);
 
   useEffect(() => {
     if (!subjects.some((item) => item.subject === selectedSubject)) {
@@ -150,12 +270,15 @@ export function TestPage() {
   }, [selectedSubject, subjects]);
 
   useEffect(() => {
-    setUsedQuestionIds([]);
-    setQuestions(buildRandomTest(questionBank, []));
-    setCurrent(0);
-    setAnswers({});
-    setSubmitted(false);
-  }, [grade, selectedSubject, questionBank]);
+    const mismatchedTest = questions.some((question) => question.grade !== grade || question.subject !== selectedSubject);
+    if (mismatchedTest || questions.length === 0) {
+      setUsedQuestionIds([]);
+      setQuestions(buildRandomTest(questionBank, []));
+      setCurrent(0);
+      setAnswers({});
+      setSubmitted(false);
+    }
+  }, [grade, questionBank, questions, selectedSubject, setAnswers, setCurrent, setQuestions, setSubmitted, setUsedQuestionIds]);
 
   const validQuestions = questions.filter(Boolean);
   const safeCurrent = Math.min(current, Math.max(validQuestions.length - 1, 0));
@@ -294,6 +417,11 @@ export function TestPage() {
           <div className="h-full rounded-full bg-[var(--accent)] transition-all" style={{ width: `${progressPercent}%` }} />
         </div>
         <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-300">{answeredCount} {t("out of")} {validQuestions.length} {t("answered")}</p>
+
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          <CalculatorTool t={t} />
+          <ScratchPad t={t} />
+        </div>
 
         <p className="mt-7 text-xl font-black">{t(active.prompt)}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
