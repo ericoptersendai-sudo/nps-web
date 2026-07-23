@@ -6,6 +6,7 @@ import type { Language } from "../utils/i18n";
 import { PageHeader } from "../components/PageHeader";
 import { Panel } from "../components/Panel";
 import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
+import { formatStudyTime } from "../utils/random";
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
@@ -176,6 +177,10 @@ export function SettingsPage() {
                 <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
                   <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Accounts created")}</p>
                   <p className="mt-1 text-3xl font-black">{stats.accountsCreated}</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4 dark:bg-white/5">
+                  <p className="text-sm font-extrabold text-slate-500 dark:text-slate-300">{t("Active study time")}</p>
+                  <p className="mt-1 text-3xl font-black">{formatStudyTime(stats.totalStudySeconds)}</p>
                 </div>
               </div>
 

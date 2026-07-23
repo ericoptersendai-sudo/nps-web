@@ -10,6 +10,13 @@ import { useUsageAnalytics } from "../context/UsageAnalyticsContext";
 import { ANALYTICS_CONSENT_KEY, hasAnalyticsConsent, loadGoogleAnalytics, trackPageView } from "../utils/analytics";
 
 const SESSION_OPEN_RECORDED_KEY = "nps-usage-open-recorded";
+const ACTIVE_STUDY_PATHS = new Set(["/prep", "/test"]);
+const ACTIVE_WINDOW_MS = 60_000;
+const MAX_TIMER_TICK_SECONDS = 15;
+
+function isStudyPath(pathname: string) {
+  return ACTIVE_STUDY_PATHS.has(pathname);
+}
 
 export function AppLayout() {
   const location = useLocation();
@@ -40,15 +47,21 @@ export function AppLayout() {
   }, []);
 
   useEffect(() => {
-    if (!cookiesAccepted || !currentUser) return;
+    if (!cookiesAccepted || !currentUser || !isStudyPath(location.pathname)) return;
     let lastTick = Date.now();
+    let lastActivity = Date.now();
     let remoteStudySeconds = 0;
+
+    const markActive = () => {
+      lastActivity = Date.now();
+    };
 
     const recordVisibleTime = () => {
       const now = Date.now();
-      const elapsedSeconds = Math.floor((now - lastTick) / 1000);
+      const elapsedSeconds = Math.min(Math.floor((now - lastTick) / 1000), MAX_TIMER_TICK_SECONDS);
+      const recentlyActive = now - lastActivity <= ACTIVE_WINDOW_MS;
       lastTick = now;
-      if (document.visibilityState === "visible" && elapsedSeconds > 0) {
+      if (document.visibilityState === "visible" && recentlyActive && elapsedSeconds > 0) {
         recordActiveSeconds(elapsedSeconds);
         remoteStudySeconds += elapsedSeconds;
         if (remoteStudySeconds >= 60) {
@@ -60,6 +73,10 @@ export function AppLayout() {
 
     const timer = window.setInterval(recordVisibleTime, 10000);
     document.addEventListener("visibilitychange", recordVisibleTime);
+    window.addEventListener("pointerdown", markActive, { passive: true });
+    window.addEventListener("keydown", markActive);
+    window.addEventListener("scroll", markActive, { passive: true });
+    window.addEventListener("touchstart", markActive, { passive: true });
 
     return () => {
       recordVisibleTime();
@@ -68,8 +85,12 @@ export function AppLayout() {
       }
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", recordVisibleTime);
+      window.removeEventListener("pointerdown", markActive);
+      window.removeEventListener("keydown", markActive);
+      window.removeEventListener("scroll", markActive);
+      window.removeEventListener("touchstart", markActive);
     };
-  }, [cookiesAccepted, currentUser, recordActiveSeconds, recordStudySeconds]);
+  }, [cookiesAccepted, currentUser, location.pathname, recordActiveSeconds, recordStudySeconds]);
 
   if (!cookiesAccepted) {
     return (

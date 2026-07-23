@@ -37,6 +37,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       progress.testsCompleted === 0 &&
       progress.averageScore === 0 &&
       progress.timeStudiedMinutes === 45 &&
+      (progress.timeStudiedSeconds === undefined || progress.timeStudiedSeconds === 2700) &&
       progress.subjectsPracticed.includes("Mathematics") &&
       progress.subjectsPracticed.includes("English Language Arts");
 
@@ -46,9 +47,10 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [progress, setProgress]);
 
   const recordActiveSeconds = useCallback((seconds: number) => {
-    if (seconds <= 0) return;
+    const safeSeconds = Math.min(Math.floor(seconds), 15);
+    if (safeSeconds <= 0) return;
     setProgress((current) => {
-      const nextSeconds = (current.timeStudiedSeconds ?? current.timeStudiedMinutes * 60) + seconds;
+      const nextSeconds = (current.timeStudiedSeconds ?? current.timeStudiedMinutes * 60) + safeSeconds;
       return {
         ...current,
         timeStudiedSeconds: nextSeconds,

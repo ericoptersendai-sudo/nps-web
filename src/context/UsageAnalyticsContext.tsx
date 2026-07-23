@@ -11,6 +11,7 @@ type UsageStats = {
   subjectSelections: Record<string, number>;
   testsCompleted: number;
   scoreBands: Record<string, number>;
+  totalStudySeconds: number;
   eventsRecorded: number;
   recentEvents: string[];
 };
@@ -36,6 +37,7 @@ const defaultStats: UsageStats = {
   subjectSelections: {},
   testsCompleted: 0,
   scoreBands: {},
+  totalStudySeconds: 0,
   eventsRecorded: 0,
   recentEvents: []
 };
@@ -54,6 +56,7 @@ function normalizeStats(stats: UsageStats) {
     subjectSelections: stats.subjectSelections ?? {},
     testsCompleted: Number.isFinite(stats.testsCompleted) ? stats.testsCompleted : 0,
     scoreBands: stats.scoreBands ?? {},
+    totalStudySeconds: Number.isFinite(stats.totalStudySeconds) ? stats.totalStudySeconds : 0,
     eventsRecorded: Number.isFinite(stats.eventsRecorded) ? stats.eventsRecorded : 0,
     recentEvents: Array.isArray(stats.recentEvents) ? stats.recentEvents : []
   };
@@ -147,9 +150,14 @@ export function UsageAnalyticsProvider({ children }: { children: ReactNode }) {
   }, [updateStats]);
 
   const recordStudySeconds = useCallback((seconds: number) => {
-    if (seconds <= 0) return;
-    void recordRemoteUsage("study_time", { seconds });
-  }, []);
+    const safeSeconds = Math.floor(seconds);
+    if (safeSeconds <= 0) return;
+    void recordRemoteUsage("study_time", { seconds: safeSeconds });
+    updateStats(`Studied for ${safeSeconds} seconds`, (current) => ({
+      ...current,
+      totalStudySeconds: current.totalStudySeconds + safeSeconds
+    }));
+  }, [updateStats]);
 
   const value = useMemo<UsageAnalyticsContextValue>(
     () => ({
