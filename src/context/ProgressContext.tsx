@@ -5,6 +5,7 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 export type Progress = {
   testsCompleted: number;
   averageScore: number;
+  bestScore?: number;
   timeStudiedMinutes: number;
   timeStudiedSeconds?: number;
   subjectsPracticed: string[];
@@ -14,6 +15,7 @@ export type Progress = {
 const defaultProgress: Progress = {
   testsCompleted: 0,
   averageScore: 0,
+  bestScore: 0,
   timeStudiedMinutes: 0,
   timeStudiedSeconds: 0,
   subjectsPracticed: [],
@@ -67,6 +69,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         ...current,
         testsCompleted: completed,
         averageScore: Math.round((current.averageScore * current.testsCompleted + percent) / completed),
+        bestScore: Math.max(current.bestScore ?? 0, percent),
         recentActivity: [`Completed a test with ${percent}%`, ...current.recentActivity].slice(0, 5)
       };
     });
