@@ -14,6 +14,7 @@ import { InfoPage } from "./pages/InfoPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { HelpPage } from "./pages/HelpPage";
+import { BadgesPage } from "./pages/BadgesPage";
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { currentUser } = useAuth();
@@ -32,6 +33,7 @@ export default function App() {
                   <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
                   <Route path="/test" element={<RequireAuth><TestPage /></RequireAuth>} />
                   <Route path="/prep" element={<RequireAuth><PrepPage /></RequireAuth>} />
+                  <Route path="/badges" element={<RequireAuth><BadgesPage /></RequireAuth>} />
                   <Route path="/grade" element={<RequireAuth><GradePage /></RequireAuth>} />
                   <Route path="/info" element={<RequireAuth><InfoPage /></RequireAuth>} />
                   <Route path="/help" element={<RequireAuth><HelpPage /></RequireAuth>} />

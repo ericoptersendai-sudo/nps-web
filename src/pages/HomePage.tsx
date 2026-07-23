@@ -1,4 +1,4 @@
-import { ArrowRight, Award, BarChart3, BookOpenCheck, Brain, Clock3, Flame, GraduationCap, Medal, Sparkles, Star, Target, Trophy } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpenCheck, Clock3, GraduationCap, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGrade } from "../context/GradeContext";
@@ -10,67 +10,7 @@ import { Panel } from "../components/Panel";
 import { StatCard } from "../components/StatCard";
 import { useSettings } from "../context/SettingsContext";
 import { translate } from "../utils/i18n";
-
-function getAwards(progress: ReturnType<typeof useProgress>["progress"]) {
-  const studiedSeconds = progress.timeStudiedSeconds ?? progress.timeStudiedMinutes * 60;
-  const practicedSubjects = new Set(progress.subjectsPracticed);
-  return [
-    {
-      title: "First Test",
-      description: "Complete one full test.",
-      icon: Trophy,
-      unlocked: progress.testsCompleted >= 1
-    },
-    {
-      title: "Test Streak",
-      description: "Complete three tests.",
-      icon: Medal,
-      unlocked: progress.testsCompleted >= 3
-    },
-    {
-      title: "Exam Veteran",
-      description: "Complete ten tests.",
-      icon: Award,
-      unlocked: progress.testsCompleted >= 10
-    },
-    {
-      title: "Strong Score",
-      description: "Score 80% or higher on a test.",
-      icon: Target,
-      unlocked: (progress.bestScore ?? progress.averageScore) >= 80
-    },
-    {
-      title: "Proficiency Star",
-      description: "Score 90% or higher on a test.",
-      icon: Star,
-      unlocked: (progress.bestScore ?? progress.averageScore) >= 90
-    },
-    {
-      title: "Perfect Test",
-      description: "Score 100% on a test.",
-      icon: Sparkles,
-      unlocked: (progress.bestScore ?? progress.averageScore) >= 100
-    },
-    {
-      title: "Study Starter",
-      description: "Study actively for five minutes.",
-      icon: Clock3,
-      unlocked: studiedSeconds >= 300
-    },
-    {
-      title: "Focus Builder",
-      description: "Study actively for thirty minutes.",
-      icon: Flame,
-      unlocked: studiedSeconds >= 1800
-    },
-    {
-      title: "Two-Subject Scholar",
-      description: "Practice both Math and ELA.",
-      icon: Brain,
-      unlocked: practicedSubjects.has("Mathematics") && practicedSubjects.has("English Language Arts")
-    }
-  ];
-}
+import { getAwards } from "../utils/awards";
 
 export function HomePage() {
   const { grade } = useGrade();
