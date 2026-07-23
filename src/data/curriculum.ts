@@ -5041,10 +5041,93 @@ function testMathPrompt(prompt: string) {
     .replace("Which conic", "Select the conic");
 }
 
+function normalizedLessonText(lesson: Lesson) {
+  return `${lesson.unit} ${lesson.title} ${lesson.standard}`.toLowerCase();
+}
+
+function pickFromTopic(preferred: number[], patternIndex: number, bankKind: QuestionBankKind, variantCount: number) {
+  const bankShift = bankKind === "test" ? Math.ceil(preferred.length / 2) : 0;
+  return preferred[(patternIndex + bankShift) % preferred.length] % variantCount;
+}
+
+function preferredMathVariant(grade: Grade, lesson: Lesson, patternIndex: number, bankKind: QuestionBankKind, variantCount: number) {
+  const text = normalizedLessonText(lesson);
+
+  if (grade <= 5) {
+    if (text.includes("fraction") || text.includes("decimal")) return pickFromTopic([2, 0, 7, 1, 4], patternIndex, bankKind, variantCount);
+    if (text.includes("money") || text.includes("coin") || text.includes("bill")) return pickFromTopic([3, 1, 7, 0, 4], patternIndex, bankKind, variantCount);
+    if (text.includes("pattern") || text.includes("algebra") || text.includes("unknown") || text.includes("variable")) return pickFromTopic([4, 1, 2, 7, 0], patternIndex, bankKind, variantCount);
+    if (text.includes("geometry") || text.includes("polygon") || text.includes("figure") || text.includes("volume") || text.includes("angle")) return pickFromTopic([5, 6, 4, 7, 2], patternIndex, bankKind, variantCount);
+    if (text.includes("measure") || text.includes("time") || text.includes("elapsed") || text.includes("length") || text.includes("capacity") || text.includes("weight")) return pickFromTopic([6, 5, 3, 7, 1], patternIndex, bankKind, variantCount);
+    if (text.includes("data") || text.includes("probability") || text.includes("mean") || text.includes("median") || text.includes("mode")) return pickFromTopic([7, 2, 4, 1, 0], patternIndex, bankKind, variantCount);
+    if (text.includes("operation") || text.includes("addition") || text.includes("subtraction") || text.includes("multiplication") || text.includes("division")) return pickFromTopic([1, 4, 0, 7, 2], patternIndex, bankKind, variantCount);
+    return pickFromTopic([0, 1, 2, 4, 7], patternIndex, bankKind, variantCount);
+  }
+
+  if (grade <= 7) {
+    if (text.includes("ratio") || text.includes("proportion") || text.includes("percent")) return pickFromTopic([1, 5, 9, 3, 8], patternIndex, bankKind, variantCount);
+    if (text.includes("equation") || text.includes("inequal") || text.includes("expression") || text.includes("algebra")) return pickFromTopic([2, 8, 9, 5, 0], patternIndex, bankKind, variantCount);
+    if (text.includes("geometry") || text.includes("area") || text.includes("volume") || text.includes("surface") || text.includes("angle") || text.includes("transformation")) return pickFromTopic([4, 6, 8, 9, 5], patternIndex, bankKind, variantCount);
+    if (text.includes("data") || text.includes("probability")) return pickFromTopic([3, 7, 1, 9, 5], patternIndex, bankKind, variantCount);
+    if (text.includes("rational") || text.includes("integer") || text.includes("absolute") || text.includes("exponent")) return pickFromTopic([0, 6, 8, 1, 2], patternIndex, bankKind, variantCount);
+    if (text.includes("measurement") || text.includes("convert")) return pickFromTopic([4, 5, 9, 1, 7], patternIndex, bankKind, variantCount);
+    return pickFromTopic([0, 1, 2, 4, 7], patternIndex, bankKind, variantCount);
+  }
+
+  if (grade === 8 || grade === 9) {
+    if (text.includes("quadratic")) return pickFromTopic([0, 1, 2, 3, 4, 5, 6, 7], patternIndex, bankKind, variantCount);
+    if (text.includes("function") || text.includes("linear") || text.includes("slope")) return pickFromTopic([0, 1, 3, 5, 6, 10, 13], patternIndex, bankKind, variantCount);
+    if (text.includes("pythagorean") || text.includes("surface") || text.includes("volume") || text.includes("triangle")) return pickFromTopic([2, 11, 8, 13, 6], patternIndex, bankKind, variantCount);
+    if (text.includes("data") || text.includes("probability") || text.includes("scatter")) return pickFromTopic([7, 10, 5, 13, 3], patternIndex, bankKind, variantCount);
+    if (text.includes("real number") || text.includes("rational") || text.includes("absolute")) return pickFromTopic([4, 12, 8, 9, 0], patternIndex, bankKind, variantCount);
+    if (text.includes("equation") || text.includes("inequal")) return pickFromTopic([1, 8, 9, 0, 13], patternIndex, bankKind, variantCount);
+  }
+
+  if (grade === 11) {
+    if (text.includes("complex") || text.includes("radical") || text.includes("rational exponent")) return pickFromTopic([4, 6, 8, 11, 14], patternIndex, bankKind, variantCount);
+    if (text.includes("matrix")) return pickFromTopic([7, 13, 8, 10, 0], patternIndex, bankKind, variantCount);
+    if (text.includes("sequence") || text.includes("series")) return pickFromTopic([3, 5, 9, 15, 10], patternIndex, bankKind, variantCount);
+    if (text.includes("function") || text.includes("inverse") || text.includes("composition")) return pickFromTopic([10, 12, 14, 0, 1], patternIndex, bankKind, variantCount);
+    if (text.includes("data") || text.includes("statistical")) return pickFromTopic([12, 9, 10, 2, 15], patternIndex, bankKind, variantCount);
+  }
+
+  if (grade === 12) {
+    if (text.includes("trigon")) return pickFromTopic([1, 3, 4, 8, 9], patternIndex, bankKind, variantCount);
+    if (text.includes("conic")) return pickFromTopic([2, 7, 12, 10, 15], patternIndex, bankKind, variantCount);
+    if (text.includes("complex")) return pickFromTopic([5, 13, 9, 3, 14], patternIndex, bankKind, variantCount);
+    if (text.includes("function") || text.includes("relations") || text.includes("model")) return pickFromTopic([0, 6, 10, 11, 14, 15], patternIndex, bankKind, variantCount);
+  }
+
+  return (patternIndex + (bankKind === "test" ? 3 : 0)) % variantCount;
+}
+
+function preferredGeometryVariant(lesson: Lesson, patternIndex: number, bankKind: QuestionBankKind) {
+  const text = normalizedLessonText(lesson);
+  if (text.includes("quadratic")) return pickFromTopic([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], patternIndex, bankKind, 12);
+  if (text.includes("circle")) return pickFromTopic([1, 10, 8, 5, 11], patternIndex, bankKind, 12);
+  if (text.includes("trigon")) return pickFromTopic([4, 8, 0, 11, 3], patternIndex, bankKind, 12);
+  if (text.includes("three-dimensional") || text.includes("3d") || text.includes("volume") || text.includes("surface")) return pickFromTopic([2, 9, 6, 1, 10], patternIndex, bankKind, 12);
+  if (text.includes("proof") || text.includes("logic") || text.includes("argument")) return pickFromTopic([5, 11, 3, 7, 0], patternIndex, bankKind, 12);
+  if (text.includes("line") || text.includes("angle") || text.includes("polygon") || text.includes("two-dimensional")) return pickFromTopic([0, 3, 8, 6, 7], patternIndex, bankKind, 12);
+  return patternIndex % 12;
+}
+
+function preferredElaVariant(lesson: Lesson, patternIndex: number, bankKind: QuestionBankKind) {
+  const text = normalizedLessonText(lesson);
+  if (text.includes("listening") || text.includes("speaking") || text.includes("discussion") || text.includes("present")) return pickFromTopic([7, 6, 3, 0], patternIndex, bankKind, 8);
+  if (text.includes("vocabulary") || text.includes("context") || text.includes("synonym") || text.includes("prefix") || text.includes("connotation")) return pickFromTopic([1, 5, 0, 4], patternIndex, bankKind, 8);
+  if (text.includes("language") || text.includes("grammar") || text.includes("sentence") || text.includes("punctuation") || text.includes("capitalization")) return pickFromTopic([0, 6, 7, 1], patternIndex, bankKind, 8);
+  if (text.includes("research") || text.includes("source") || text.includes("citation") || text.includes("evidence")) return pickFromTopic([2, 6, 4, 3], patternIndex, bankKind, 8);
+  if (text.includes("critical") || text.includes("inference") || text.includes("point of view") || text.includes("literary") || text.includes("structure")) return pickFromTopic([3, 2, 4, 0], patternIndex, bankKind, 8);
+  if (text.includes("writing") || text.includes("process") || text.includes("claim") || text.includes("argument") || text.includes("draft")) return pickFromTopic([2, 1, 6, 4], patternIndex, bankKind, 8);
+  if (text.includes("multimodal") || text.includes("visual") || text.includes("independent")) return pickFromTopic([6, 7, 3, 2], patternIndex, bankKind, 8);
+  return (patternIndex + (bankKind === "test" ? 4 : 0)) % 8;
+}
+
 function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
   const bankOffset = bankKind === "test" ? 10000 : 0;
   const variantCount = grade <= 5 ? 8 : grade <= 7 ? 10 : grade === 10 ? 12 : grade === 11 || grade === 12 ? 16 : 14;
-  const variant = (patternIndex + (bankKind === "test" ? 3 : 0)) % variantCount;
+  const variant = preferredMathVariant(grade, lesson, patternIndex, bankKind, variantCount);
   const base = grade * 11 + index + bankOffset;
   const a = (base % 19) + grade + 3;
   const b = (base % 13) + grade + 2;
@@ -5466,7 +5549,7 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
     }
   } else if (grade === 10) {
     const angle = 30 + 5 * (index % 8);
-    const geometryVariant = patternIndex % 12;
+    const geometryVariant = preferredGeometryVariant(lesson, patternIndex, bankKind);
     if (lesson.title.toLowerCase().includes("quadratic")) {
       const rootOne = (index % 5) + 2;
       const rootTwo = rootOne + (index % 4) + 2;
@@ -5806,7 +5889,7 @@ function generatedMathQuestion(grade: Grade, lesson: Lesson, index: number, bank
 }
 
 function generatedElaQuestion(grade: Grade, lesson: Lesson, index: number, bankKind: QuestionBankKind, patternIndex: number): Question {
-  const variant = (patternIndex + (bankKind === "test" ? 4 : 0)) % 8;
+  const variant = preferredElaVariant(lesson, patternIndex, bankKind);
   const unit = lesson.title;
   let prompt = "";
   let correct = "";
